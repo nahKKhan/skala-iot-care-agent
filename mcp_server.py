@@ -52,6 +52,23 @@ def get_monitoring_status(system_name: str) -> SystemStatus:
         alerts=data.get("alerts", []),
     )
 
+# 추가한 부분 (devices 데이터를 Mcp에 연결)
+@mcp.tool()
+def get_device_status(device_id: str) -> dict:
+    """장치 ID로 가상 IoT 장치의 상태를 조회"""
+    devices = json.loads((DATA_DIR / "devices.json").read_text(encoding="utf-8"))
+
+    if device_id not in devices:
+        return {
+            "ok" : False,
+            "device_id" : device_id,
+            "error" : "등록되지 않은 장치입니다."
+        }
+    return {
+        "ok" : True,
+        "device_id" : device_id,
+        "data" : devices[device_id]
+    } 
 
 @mcp.resource("runbook://incident-response/{incident_type}")
 def get_incident_runbook(incident_type: str) -> str:

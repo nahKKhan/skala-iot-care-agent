@@ -1,0 +1,26 @@
+{
+    "sensor-01": {
+        "name" : "강의실 온습도 센서",
+        "connected" : true,
+        "battery_pct" : 90,
+        "report_interval_seconds" : 60,
+        "telemetry_age_seconds" : 10,
+        "supported_actions" : ["restart_collection"]
+    },
+    "sensor-02": {
+        "name" : "실습실 온습도 센서",
+        "connected" : true,
+        "battery_pct" : 80,
+        "report_interval_seconds" : 60,
+        "telemetry_age_seconds" : 600,
+        "supported_actions" : ["restart_collection"]
+    },
+    "sensor-03": {
+        "name" : "복도 온습도 센서",
+        "connected" : false,
+        "battery_pct" : 5,
+        "report_interval_seconds" : 60,
+        "telemetry_age_seconds" : 900,
+        "supported_actions" : []
+    }
+}
