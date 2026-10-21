@@ -1,8 +1,8 @@
 # 명령 접수와 복구 검증
 
-<!-- meta: {"id": "recovery_verification", "title": "명령 접수와 복구 검증", "issues": ["telemetry_delayed", "recovery_failed", "verification_pending"], "tags": ["복구", "확인", "재시작", "접수", "sequence", "검증"], "version": "1.0", "origin": "프로젝트 작성 시뮬레이션 점검 절차", "causes": []} -->
+<!-- meta: {"id": "recovery_verification", "title": "명령 접수와 복구 검증", "issues": ["telemetry_delayed", "recovery_failed", "verification_pending"], "tags": ["복구", "확인", "재시작", "접수", "sequence", "검증"], "version": "2.0", "origin": "프로젝트 가상 복구 정책", "causes": [], "source_type": "project_policy", "publisher": "IoT Care Agent", "source_url": null, "source_section": null, "retrieved_at": null, "applicable_models": []} -->
 
-> 가상 IoT 데모용 절차입니다. 실제 제조사 매뉴얼 또는 검증된 현장 고장 진단서가 아닙니다.
+> 프로젝트의 가상 수집기 복구 정책입니다. Shelly 제조사 매뉴얼이나 실제 장치 재부팅 기능이 아닙니다.
 
 ## 판별 근거
 command_accepted=true는 명령 접수만 의미한다. 복구 성공은 실행 전보다 telemetry_sequence가 증가하고 다시 조회한 상태가 정상일 때만 판정한다. 기존 패킷이나 접수 메시지를 새 데이터로 취급하지 않는다.

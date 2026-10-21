@@ -3,60 +3,102 @@
     "name": "강의실 온습도 센서",
     "connected": true,
     "battery_pct": 90,
-    "report_interval_seconds": 60,
+    "report_interval_seconds": 300,
     "telemetry_age_seconds": 10,
     "supported_actions": [
       "restart_collection"
-    ]
+    ],
+    "manufacturer": "Shelly",
+    "model": "shelly_ht_gen3",
+    "model_name": "Shelly H&T Gen3",
+    "simulated": true,
+    "power_source": "usb",
+    "measurement_interval_seconds": 300,
+    "recovery_scope": "simulated_collector"
   },
   "sensor-02": {
     "name": "실습실 온습도 센서",
     "connected": true,
     "battery_pct": 80,
-    "report_interval_seconds": 60,
+    "report_interval_seconds": 300,
     "telemetry_age_seconds": 600,
     "supported_actions": [
       "restart_collection"
-    ]
+    ],
+    "manufacturer": "Shelly",
+    "model": "shelly_ht_gen3",
+    "model_name": "Shelly H&T Gen3",
+    "simulated": true,
+    "power_source": "usb",
+    "measurement_interval_seconds": 300,
+    "recovery_scope": "simulated_collector"
   },
   "sensor-03": {
     "name": "복도 온습도 센서",
     "connected": false,
     "battery_pct": 5,
-    "report_interval_seconds": 60,
-    "telemetry_age_seconds": 900,
-    "supported_actions": []
+    "report_interval_seconds": 7200,
+    "telemetry_age_seconds": 8100,
+    "supported_actions": [],
+    "manufacturer": "Shelly",
+    "model": "shelly_ht_gen3",
+    "model_name": "Shelly H&T Gen3",
+    "simulated": true,
+    "power_source": "battery",
+    "measurement_interval_seconds": 60,
+    "recovery_scope": "simulated_collector"
   },
   "sensor-04": {
     "name": "예약 절전 센서",
     "connected": false,
     "battery_pct": 80,
-    "report_interval_seconds": 60,
+    "report_interval_seconds": 7200,
     "telemetry_age_seconds": 600,
     "supported_actions": [
       "restart_collection"
     ],
     "mode": "sleeping",
-    "wake_in_seconds": 300
+    "wake_in_seconds": 60,
+    "manufacturer": "Shelly",
+    "model": "shelly_ht_gen3",
+    "model_name": "Shelly H&T Gen3",
+    "simulated": true,
+    "power_source": "battery",
+    "measurement_interval_seconds": 60,
+    "recovery_scope": "simulated_collector"
   },
   "sensor-05": {
     "name": "창고 온습도 센서",
     "connected": true,
     "battery_pct": 80,
-    "report_interval_seconds": 60,
+    "report_interval_seconds": 300,
     "telemetry_age_seconds": 600,
     "supported_actions": [
       "restart_collection"
-    ]
+    ],
+    "manufacturer": "Shelly",
+    "model": "shelly_ht_gen3",
+    "model_name": "Shelly H&T Gen3",
+    "simulated": true,
+    "power_source": "usb",
+    "measurement_interval_seconds": 300,
+    "recovery_scope": "simulated_collector"
   },
   "sensor-06": {
     "name": "도서관 온습도 센서",
     "connected": true,
     "battery_pct": 80,
-    "report_interval_seconds": 60,
+    "report_interval_seconds": 300,
     "telemetry_age_seconds": 600,
     "supported_actions": [
       "restart_collection"
-    ]
+    ],
+    "manufacturer": "Shelly",
+    "model": "shelly_ht_gen3",
+    "model_name": "Shelly H&T Gen3",
+    "simulated": true,
+    "power_source": "usb",
+    "measurement_interval_seconds": 300,
+    "recovery_scope": "simulated_collector"
   }
 }

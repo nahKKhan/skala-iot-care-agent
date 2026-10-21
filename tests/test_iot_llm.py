@@ -133,6 +133,8 @@ class LLMChatIntegrationTests(unittest.TestCase):
     def test_chat_passes_facts_manual_and_never_executes_recovery(self):
         result = self.client.post("/chat", json={"message": "sensor-02 재시작해줘"}).json()
         self.assertEqual(result["metadata"]["answer_source"], "llm")
+        evidence = self.explain.await_args.kwargs
+        self.assertTrue(any(d.get("source_type") == "manufacturer_summary" and d.get("source_url") for d in evidence["documents"]))
         self.assertEqual(result["metadata"]["llm_usage"], USAGE)
         self.assertIsNone(result["metadata"]["cost_usd"])
         self.assertEqual(result["recovery"]["device_id"], "sensor-02")

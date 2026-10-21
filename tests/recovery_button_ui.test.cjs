@@ -39,7 +39,7 @@ function setup(recover, resetAll = async () => response({ok: true, count: 6,
       if (url === '/api/recover') return recover(url, options);
       throw new Error('Unexpected URL: ' + url);
     },
-    EventSource: FakeEventSource, AbortController, setTimeout, clearTimeout,
+    EventSource: FakeEventSource, URL, AbortController, setTimeout, clearTimeout,
   });
   function inspect(recovery = offer, reply = 'sensor-99라는 문장이 있어도 구조화된 대상을 사용합니다.', sources = []) {
     state.input.value = 'sensor-02 점검';
@@ -386,4 +386,16 @@ test('first-load errors stay visible with the selected-device filter and differ 
   await ui.state.loadMaintenance();
   assert.equal(ui.state.historyEmptyText.value, '선택한 장치의 기록이 없습니다.');
   assert.equal(ui.state.historyMessage.value, '');
+});
+
+test('manual source links allow only verified official HTTPS hosts', () => {
+  const ui = setup(async () => response(successful));
+  assert.equal(ui.state.safeManualUrl('https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3'),
+    'https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3');
+  assert.equal(ui.state.safeManualUrl('https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/'),
+    'https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/');
+  for (const value of [null, '', 'javascript:alert(1)', 'http://kb.shelly.cloud/a',
+    'https://kb.shelly.cloud.evil.example/a', 'https://evil.example/', 'https://user:pass@kb.shelly.cloud/']) {
+    assert.equal(ui.state.safeManualUrl(value), '');
+  }
 });

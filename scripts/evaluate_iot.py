@@ -22,6 +22,7 @@ from agent.ollama_llm import OllamaQualityLLM
 from agent.mcp_client import MCPClient
 from agent.session_store import SqliteSessionStore
 from agent.iot_simulator import IoTSimulator
+from agent.manual_search import ManualIndex
 
 
 def legacy_issues(data):
@@ -46,7 +47,8 @@ def write_report(report, output):
            f"- 모드: {report['backend']} / 모델: {report['model']}",
            f"- 파이프라인 코드 버전: {report.get('pipeline_version', '초기 평가에는 기록하지 않음')}",
            f"- 데이터: 고정된 가상 사례 {len(cases)}개. 실제 현장 성능으로 일반화할 수 없음.",
-           "- 기준선: 변경 전 배터리·연결·지연 규칙과 수신 지연 매뉴얼 1개 고정 조회. 기준선 LLM 답변은 생성하지 않음.",
+           ("- 기준선: 현재 가상 관측에 과거 3배 지연 규칙과 매뉴얼 1개 고정 조회를 적용. 실제 변경 전 실행 결과와의 비교는 아님."
+            if report.get("manual_corpus") else "- 기준선: 변경 전 배터리·연결·지연 규칙과 수신 지연 매뉴얼 1개 고정 조회. 기준선 LLM 답변은 생성하지 않음."),
            "- 정답 분류와 필수 문서 목록은 평가기만 읽으며 모델 입력에 전달하지 않음.", "", "| 지표 | 기준선 | 개선 후 |", "|---|---:|---:|"]
     lines += [f"| 상태 분류 정답 사례 | {sum(c['baseline_classification_correct'] for c in assessed)}/{len(assessed)} | {sum(c['classification_correct'] for c in assessed)}/{len(assessed)} |",
               f"| 필수 문서 검색 포함 수 | {sum(c['baseline_document_hits'] for c in cases)}/{required} | {sum(c['document_hits'] for c in cases)}/{required} |",
@@ -57,7 +59,8 @@ def write_report(report, output):
               "| 사례 | 입력 | 결과 출처 | 시간(초) | 검색 문서 | 검수 |", "|---|---|---|---:|---|---|"]
     for c in cases:
         lines.append(f"| {c['id']} | {c['query']} | {c['answer_source']} | {c['elapsed_seconds']} | {', '.join(c['retrieved_documents']) or '-'} | {c['qa'].get('passed') if c['qa'] else '-'} |")
-    lines += ["", "## 검토 메모", "", "- 실제 기기·제조사 매뉴얼·현장 로그는 연결하지 않았다.",
+    lines += ["", "## 검토 메모", "", ("- 제조사 공식 문서 기반 한국어 요약을 사용했다. 실제 기기·현장 로그는 연결하지 않았다."
+               if report.get("manual_corpus") else "- 실제 기기·제조사 매뉴얼·현장 로그는 연결하지 않았다."),
               "- 소규모 개발용 평가 세트다. 독립된 대규모 검증 세트나 사람의 승인 결과가 아니다.",
               "- 실패 또는 규칙 기반 대체 답변도 그대로 기록하며 실제 모델 성능으로 성공 처리하지 않는다."]
     for c in cases:
@@ -104,7 +107,11 @@ async def evaluate(args):
         finally:
             await mcp.stop()
             store.close()
-    report={"pipeline_version":PIPELINE_VERSION,"created_at":datetime.now().astimezone().isoformat(timespec="seconds"),"backend":args.backend,"model":args.model if args.backend=="ollama" else "none","cases":results}
+    index = ManualIndex()
+    corpus = index.search("보고 주기")
+    report={"manual_corpus": {key:corpus[key] for key in ("index_version", "manufacturer_document_count", "policy_document_count", "chunk_count")},
+            "device_data_version":hashlib.sha256((ROOT/"data/devices.json").read_bytes()).hexdigest()[:12],
+            "pipeline_version":PIPELINE_VERSION,"created_at":datetime.now().astimezone().isoformat(timespec="seconds"),"backend":args.backend,"model":args.model if args.backend=="ollama" else "none","cases":results}
     write_report(report,args.output)
     print("report:",args.output,flush=True)
 

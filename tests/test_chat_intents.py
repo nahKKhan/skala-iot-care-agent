@@ -75,7 +75,7 @@ class ChatIntentAPITests(unittest.TestCase):
         self.assertEqual(result["metadata"]["route"],"device_info")
         self.assertIsNone(result["recovery"])
         self.assertEqual(self.client.get("/api/maintenance").json()["records"],[])
-        for query, expected in (("sensor-02의 배터리 얼마나 남았어?","80%"),("sensor-02 전송 주기는?","60초"),("sensor-02 지원 명령은?","restart_collection")):
+        for query, expected in (("sensor-02의 배터리 얼마나 남았어?","80%"),("sensor-02 전송 주기는?","300초"),("sensor-02 지원 명령은?","restart_collection")):
             result=self.chat(query)
             self.assertIn(expected,result["reply"])
             self.assertIsNone(result["recovery"])

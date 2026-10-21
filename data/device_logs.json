@@ -23,19 +23,20 @@
       }
     },
     {
-      "offset_seconds": -420,
+      "offset_seconds": -239,
       "level": "WARN",
       "component": "gateway",
       "code": "REPORT_DEADLINE_MISSED",
-      "message": "설정된 전송 주기를 초과해 새 데이터가 수신되지 않았습니다.",
+      "message": "USB 전원 보고 간격 300초와 프로젝트 수신 여유 60초를 초과했습니다.",
       "details": {
-        "report_interval_seconds": 60
+        "report_interval_seconds": 300,
+        "project_grace_seconds": 60
       }
     },
     {
       "offset_seconds": -10,
       "level": "WARN",
-      "component": "collection",
+      "component": "collector",
       "code": "COLLECTION_INPUT_MISSING",
       "message": "수집 입력에 새 샘플이 없습니다. 중단 위치와 원인은 추가 확인이 필요합니다.",
       "details": {}
@@ -43,7 +44,7 @@
   ],
   "sensor-03": [
     {
-      "offset_seconds": -950,
+      "offset_seconds": -8150,
       "level": "WARN",
       "component": "device",
       "code": "LOW_BATTERY_REPORTED",
@@ -53,7 +54,7 @@
       }
     },
     {
-      "offset_seconds": -900,
+      "offset_seconds": -8100,
       "level": "WARN",
       "component": "gateway",
       "code": "CONNECTION_LOST",
@@ -75,7 +76,7 @@
       "level": "INFO",
       "component": "device",
       "code": "SCHEDULED_SLEEP_ENTERED",
-      "message": "장치가 예약된 절전에 진입했습니다.",
+      "message": "가상 관측에 절전 모드가 등록되어 있습니다. 실제 기기의 절전 진입 로그는 아닙니다.",
       "details": {}
     },
     {
@@ -83,9 +84,10 @@
       "level": "INFO",
       "component": "gateway",
       "code": "SLEEP_SCHEDULE_ACTIVE",
-      "message": "등록된 절전 일정에 따라 기상을 기다리는 상태입니다.",
+      "message": "배터리 보고 조건의 기한 안에서 다음 보고를 기다리고 있습니다.",
       "details": {
-        "wake_in_seconds": 300
+        "wake_in_seconds": 60,
+        "report_interval_seconds": 7200
       }
     }
   ],
@@ -101,19 +103,20 @@
       }
     },
     {
-      "offset_seconds": -420,
+      "offset_seconds": -239,
       "level": "WARN",
       "component": "gateway",
       "code": "REPORT_DEADLINE_MISSED",
-      "message": "설정된 전송 주기를 초과해 새 데이터가 수신되지 않았습니다.",
+      "message": "USB 전원 보고 간격 300초와 프로젝트 수신 여유 60초를 초과했습니다.",
       "details": {
-        "report_interval_seconds": 60
+        "report_interval_seconds": 300,
+        "project_grace_seconds": 60
       }
     },
     {
       "offset_seconds": -10,
       "level": "WARN",
-      "component": "collection",
+      "component": "collector",
       "code": "COLLECTION_INPUT_MISSING",
       "message": "수집 입력에 새 샘플이 없습니다. 중단 위치와 원인은 추가 확인이 필요합니다.",
       "details": {}
@@ -131,19 +134,20 @@
       }
     },
     {
-      "offset_seconds": -420,
+      "offset_seconds": -239,
       "level": "WARN",
       "component": "gateway",
       "code": "REPORT_DEADLINE_MISSED",
-      "message": "설정된 전송 주기를 초과해 새 데이터가 수신되지 않았습니다.",
+      "message": "USB 전원 보고 간격 300초와 프로젝트 수신 여유 60초를 초과했습니다.",
       "details": {
-        "report_interval_seconds": 60
+        "report_interval_seconds": 300,
+        "project_grace_seconds": 60
       }
     },
     {
       "offset_seconds": -10,
       "level": "WARN",
-      "component": "collection",
+      "component": "collector",
       "code": "COLLECTION_INPUT_MISSING",
       "message": "수집 입력에 새 샘플이 없습니다. 중단 위치와 원인은 추가 확인이 필요합니다.",
       "details": {}

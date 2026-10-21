@@ -1,15 +1,15 @@
-# 전송 경로와 게이트웨이 추가 점검
+# Shelly Wi-Fi 연결과 전송 경로 확인
 
-<!-- meta: {"id": "transport_path", "title": "전송 경로와 게이트웨이 추가 점검", "issues": ["telemetry_delayed", "offline"], "tags": ["전송", "게이트웨이", "무선", "네트워크", "통신", "경로"], "version": "1.0", "origin": "프로젝트 작성 시뮬레이션 점검 절차", "causes": [{"id": "transport_delay", "title": "전송 경로 지연 가능성", "check": "게이트웨이 수신 로그와 장치별 최근 수신 시각을 비교한다."}]} -->
+<!-- meta: {"id": "transport_path", "title": "Shelly Wi-Fi 연결과 전송 경로 확인", "issues": ["telemetry_delayed", "offline"], "tags": ["전송", "게이트웨이", "무선", "네트워크", "통신", "경로", "클라우드"], "version": "summary-2026-10-21", "origin": "Shelly 공식 문서 기반 한국어 요약", "source_type": "manufacturer_summary", "publisher": "Shelly", "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/", "source_title": "WiFi", "source_section": "Status / Notifications", "retrieved_at": "2026-10-21", "applicable_models": ["shelly_ht_gen3"], "causes": [{"id": "transport_delay", "title": "Wi-Fi 연결·IP 확보 단계 이상 가능성", "check": "현장에서 Wifi.GetStatus의 status·sta_ip·rssi와 연결 해제 이벤트를 확인한다."}]} -->
 
-> 가상 IoT 데모용 절차입니다. 실제 제조사 매뉴얼 또는 검증된 현장 고장 진단서가 아닙니다.
+> 공식 문서의 필요한 부분을 한국어로 요약했습니다. 원문 전체 번역이나 제조사가 작성한 한국어 매뉴얼은 아닙니다.
+> 원문: [WiFi](https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/) · 절: Status / Notifications · 확인: 2026-10-21
 
-## 판별 근거
-센서 샘플 생성, 장치 송신, 중간 장비 전달, 서비스 수신은 서로 다른 확인 지점이다. 현재 제공되는 것은 최종 수신 경과 시간과 연결 여부뿐이므로 중간 경로는 미확인이다.
+## 연결 관측값
+Wifi.GetStatus에는 연결 단계 status, IP 주소 sta_ip, SSID, RSSI 등이 있다. status에는 disconnected, connecting, connected, got ip가 정의돼 있다.
 
 ## 원인 후보와 확인 한계
-전송 경로 지연 가능성을 후보로 둘 수 있다. 여러 장치가 동시에 지연되는지와 게이트웨이 수신 로그는 추가 확인 항목이다. 이 서비스는 현재 실제 게이트웨이 로그나 신호 세기를 수집하지 않는다.
+Wi-Fi 연결·IP 확보 단계 이상은 추가 확인할 후보이다. 연결 해제 이벤트의 reason 값을 수집하지 않았다면 해제 원인을 특정할 수 없다.
 
-## 조치와 결과 확인
-실제 로그 없이 게이트웨이 재부팅이나 네트워크 설정 변경을 실행하지 않는다. 현재 지원되는 원격 조치는 해당 장치의 수집 모듈 재시작 하나이며 허용 조건을 충족할 때만 제안한다.
-
+## 전송 경로 추가 확인
+Wi-Fi 연결 상태는 무선 구간의 관측값이다. 서버의 새 데이터 수신까지 보장하는 값으로 사용하지 않는다. 현재 가상 데이터에는 RSSI·IP·reason이 없으므로 추가 조회가 필요하다.

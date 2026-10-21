@@ -1,15 +1,15 @@
-# 관측 데이터 누락과 형식 점검
+# Shelly Humidity 누락값과 오류 필드
 
-<!-- meta: {"id": "data_integrity", "title": "관측 데이터 누락과 형식 점검", "issues": ["invalid_data"], "tags": ["누락", "형식", "음수", "데이터", "불명", "확인"], "version": "1.0", "origin": "프로젝트 작성 시뮬레이션 점검 절차", "causes": []} -->
+<!-- meta: {"id": "data_integrity", "title": "Shelly Humidity 누락값과 오류 필드", "issues": ["invalid_data"], "tags": ["누락", "형식", "데이터", "불명", "습도", "null", "오류"], "version": "summary-2026-10-21", "origin": "Shelly 공식 문서 기반 한국어 요약", "source_type": "manufacturer_summary", "publisher": "Shelly", "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/Humidity/", "source_title": "Humidity", "source_section": "Status", "retrieved_at": "2026-10-21", "applicable_models": ["shelly_ht_gen3"], "causes": []} -->
 
-> 가상 IoT 데모용 절차입니다. 실제 제조사 매뉴얼 또는 검증된 현장 고장 진단서가 아닙니다.
+> 공식 문서의 필요한 부분을 한국어로 요약했습니다. 원문 전체 번역이나 제조사가 작성한 한국어 매뉴얼은 아닙니다.
+> 원문: [Humidity](https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/Humidity/) · 절: Status · 확인: 2026-10-21
 
-## 판별 근거
-연결 여부는 boolean, 배터리는 0~100, 전송 주기는 양수, 마지막 수신 경과 시간은 0 이상이어야 한다. 필수 관측값이 없거나 범위를 벗어나면 정상이나 장애 원인을 확정하지 않는다.
+## 유효하지 않은 측정값
+Humidity.GetStatus의 rh는 상대습도이며 유효한 측정값을 얻지 못하면 null일 수 있다. 누락된 값을 정상 습도로 채우지 않는다.
 
-## 원인 후보와 확인 한계
-입력 데이터 부족과 장치 고장은 다르다. 누락된 정보를 모델이 추정해 채워 넣지 않는다. 누락 필드와 재조회 필요를 안내한다.
+## 오류 관측
+errors에는 out_of_range 또는 read가 포함될 수 있다. 오류 필드와 측정값을 함께 확인한다.
 
-## 조치와 결과 확인
-관측 데이터가 유효하지 않으면 원격 복구를 허용하지 않는다. 수집 인터페이스와 데이터 형식을 먼저 확인하고 유효한 관측값이 확보된 뒤 다시 판단한다.
-
+## 프로젝트 적용 한계
+현재 시뮬레이터는 상태·잔량·수신 경과 시간을 정규화해 사용한다. 이 입력의 형식 검사는 프로젝트 정책이며 실제 제조사 측정 오류를 직접 진단한 결과가 아니다.

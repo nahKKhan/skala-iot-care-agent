@@ -4,6 +4,7 @@ from typing import TypedDict
 from langgraph.graph import END, StateGraph
 from langgraph.config import get_stream_writer
 from .device_rules import assess_device
+from .manual_search import source_description, SOURCE_FIELDS
 from .iot_llm import ExplanationError, render_explanation
 from .answer_quality import check_answer
 from .query_router import route_query, device_ids, find_named_devices, is_device_discovery, HELP
@@ -84,6 +85,8 @@ def build_graph(deps):
                 answer += "\n등록된 장치 이름을 기준으로 찾았습니다. 구체적인 관리 구역은 별도 등록되어 있지 않습니다."
             if "어디" in state["query"] and not matched_by_name:
                 answer += "\n구체적인 설치 위치는 별도 등록되어 있지 않아 이름 이상의 위치를 확정할 수 없어요."
+            if device.get("model_name"):
+                answer += f"\n참고 제품: {device['model_name']} · 전원: {device.get('power_source')} · 실제 제품 연결은 없습니다."
             answer += f"\n현재 상태는 '{ids[0]} 점검해줘', 배터리는 '{ids[0]} 배터리 얼마나 남았어?'라고 물어보세요."
             return {"route": route, "device_id": ids[0], "answer_source": "device_registry", "final": answer}
         if route == "logs":
@@ -104,7 +107,7 @@ def build_graph(deps):
             docs = retrieval.get("documents", [])
             answer = "매뉴얼에서 찾은 일반 점검 절차예요. 특정 장치의 현재 상태를 점검한 결과는 아닙니다."
             if docs:
-                answer += "\n\n" + "\n\n".join(f"[{d['source_id']}] {d['title']} · {d['section']}\n{d['text']}" for d in docs)
+                answer += "\n\n" + "\n\n".join(f"[{d['source_id']}] {d['title']} · {d['section']}\n{d['text']}\n{source_description(d)}" for d in docs)
             else:
                 answer += "\n관련 근거를 찾지 못했습니다. 증상이나 질문을 더 구체적으로 알려주세요."
             return {"route": route, "answer_source": "manual_search", "retrieval": retrieval, "final": answer}
@@ -116,14 +119,19 @@ def build_graph(deps):
             query = state["query"]
             lines = [f"{data['name']} ({ids[0]})"]
             if "배터리" in query or "잔량" in query:
-                lines.append(f"배터리 잔량: {data.get('battery_pct', '미확인')}%")
+                battery = data.get("battery_pct")
+                lines.append("배터리 잔량: " + (f"{battery}%" if battery is not None else "미확인"))
             elif "명령" in query or "기능" in query:
                 lines.append("등록된 지원 명령: " + (", ".join(data.get("supported_actions", [])) or "없음"))
+                lines.append("restart_collection은 가상 수집기 명령이며 실제 Shelly 재부팅 기능이 아닙니다.")
                 lines.append("명령 지원 여부와 현재 실행 가능 여부는 다릅니다. 실행 가능 여부는 점검 후 확인하세요.")
             elif "연결" in query:
                 lines.append("현재 연결 상태: " + ("연결됨" if data.get("connected") else "연결 끊김"))
             else:
-                lines.append(f"설정된 전송 주기: {data.get('report_interval_seconds', '미확인')}초")
+                lines.append(f"최대 보고 간격: {data.get('report_interval_seconds', '미확인')}초")
+                if data.get("model_name"):
+                    lines.append(f"참고 제품: {data['model_name']} · 전원: {data.get('power_source')}")
+                    lines.append("측정 주기와 서버 보고 간격은 다릅니다. 실제 제품 연결 없이 동작 조건을 모사합니다.")
             return {"route": route, "device_id": ids[0], "answer_source": "device_status", "final": "\n".join(lines)}
         return {"route": route, "device_id": ids[0], "result": result, "assessment": assess_device(result["data"])}
 
@@ -138,7 +146,9 @@ def build_graph(deps):
         query = state["query"] + " " + " ".join(issues or [key])
         try:
             retrieval = await deps.mcp.call_tool("search_iot_manuals", {
-                "query": query, "issues": issues, "operating_state": assessment.get("operating_state"), "top_k": 3})
+                "query": query, "issues": issues, "operating_state": assessment.get("operating_state"), "top_k": 3,
+                "model": state["result"]["data"].get("model", "unregistered"),
+                "power_source": state["result"]["data"].get("power_source")})
         except Exception:
             retrieval = {"documents": [], "error": "매뉴얼 검색 결과를 확인하지 못했습니다."}
         try:
@@ -166,7 +176,8 @@ def build_graph(deps):
             return {"answer_source": "rules_no_evidence", "qa": {"passed": False, "errors": ["검색 근거 부족"], "method": "retrieval-error"}}
         attempts = state.get("attempts", 0) + 1
         get_stream_writer()({"type": "DeviceExplanationStarted", "attempt": attempts})
-        docs = [{key: d[key] for key in ("source_id", "title", "section", "text")} for d in state["retrieval"]["documents"]]
+        docs = [{key: d.get(key) for key in ("source_id", "title", "section", "text", *SOURCE_FIELDS)}
+                for d in state["retrieval"]["documents"]]
         try:
             draft, usage = await deps.quality_llm.explain_device(
                 query=state["query"], device_id=state["device_id"], data=state["result"]["data"],
@@ -201,10 +212,17 @@ def build_graph(deps):
         issues = assessment["issues"]
         summary = ", ".join(labels[i] for i in issues) if issues else "설정된 점검 기준에서 이상이 발견되지 않았습니다."
         if not issues and assessment.get("operating_state") == "sleeping":
-            summary = "예정된 정상 절전 상태입니다. 원격 재시작하지 않습니다."
+            summary = "정상 절전·보고 대기 조건 안입니다. 실제 절전 여부는 미확인이고 원격 재시작하지 않습니다."
+        battery = data.get("battery_pct")
+        battery_label = f"{battery}%" if battery is not None else "미확인"
         lines = [f"{data.get('name', state['device_id'])} ({state['device_id']})", f"점검 결과: {summary}",
-                 f"배터리: {data.get('battery_pct', '미확인')}%", f"마지막 수신 이후: {data.get('telemetry_age_seconds', '미확인')}초",
-                 f"전송 주기: {data.get('report_interval_seconds', '미확인')}초"]
+                 f"배터리: {battery_label}", f"마지막 수신 이후: {data.get('telemetry_age_seconds', '미확인')}초",
+                 f"최대 보고 간격: {data.get('report_interval_seconds', '미확인')}초"]
+        if data.get("model_name"):
+            policy = assessment.get("reporting_policy", {})
+            lines.extend([f"참고 제품: {data['model_name']} · 전원: {data.get('power_source')} · 가상 장치",
+                          f"보고 판정: 제조사 보고 간격 + 프로젝트 수신 여유 {policy.get('grace_seconds', '미확인')}초",
+                          "복구 버튼은 프로젝트 가상 수집기만 재시작합니다. 실제 Shelly 장치를 재부팅하지 않습니다."])
         source = state.get("answer_source", "rules")
         accepted = source == "llm" and state.get("qa", {}).get("passed")
         if accepted:
@@ -228,8 +246,8 @@ def build_graph(deps):
             for candidate in candidates:
                 lines.append(f"- {candidate['title']} [{candidate['source_id']}]\n  추가 확인: {candidate['check']}")
         if not accepted:
-            if assessment.get("operating_state") == "sleeping":
-                lines.append("\n다음 조치: 예정된 기상 이후 새 수신 여부를 확인하세요.")
+            if assessment.get("operating_state") == "sleeping" and not issues:
+                lines.append("\n다음 조치: 전원 방식별 보고 조건을 확인하고 다음 보고 기한 이후 새 수신 여부를 확인하세요.")
             elif data.get("recovery_attempts", 0):
                 lines.append("\n다음 조치: 이미 복구를 시도했습니다. 추가 재시작 대신 현장 점검이 필요합니다.")
             elif issues:
@@ -239,7 +257,7 @@ def build_graph(deps):
         docs = state.get("retrieval", {}).get("documents", [])
         if docs:
             lines.append("\n참고 매뉴얼 검색 근거:")
-            lines.extend(f"[{d['source_id']}] {d['title']} > {d['section']}" for d in docs)
+            lines.extend(f"[{d['source_id']}] {d['title']} > {d['section']}\n{source_description(d)}" for d in docs)
         else:
             lines.append("\n검색 근거가 부족합니다. 원인을 확정하지 않고 추가 정보가 필요합니다.")
         if state.get("history"):
@@ -249,6 +267,7 @@ def build_graph(deps):
             status = "normal" if assessment["status"] == "healthy" else "open"
             record_id = deps.session_store.record_maintenance(state["device_id"], "inspection", status, summary,
                 {"data": data, "assessment": assessment, "source_ids": [d["source_id"] for d in docs],
+                 "manual_index_version": state.get("retrieval", {}).get("index_version"), "manual_sources": docs,
                  "answer_source": source, "qa": state.get("qa"), "query": state["query"], "device_logs": state.get("device_logs")})
         return {"final": "\n".join(lines), "answer_source": source, "maintenance_id": record_id}
 

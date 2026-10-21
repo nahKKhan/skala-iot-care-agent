@@ -1,9 +1,11 @@
 # IoT Care 문서 안내
 
 - [프로젝트 소개·설치·실행](../README.md)
-- [제출용 최신 검증 기록·실행 화면 설명](submission_validation.md)
+- [공식 매뉴얼 교체 이전 제출 검증·실행 화면 설명](submission_validation.md)
 - [현재 구현 가이드](../IMPLEMENTATION_GUIDE.md)
 - [Ollama·OpenAI 연결과 실행](llm_connection.md)
+- [공식 매뉴얼 원문·전원별 적용 기준·검증](official_manuals.md)
+- [공식 매뉴얼 교체 후 규칙·검색 평가](evaluation_shelly_rules.md)
 - [RAG와 답변 검수](rag_and_quality.md)
 - [복구 버튼·검증](recovery_button.md)
 - [수동 점검 질문](regression_test_queries.md)

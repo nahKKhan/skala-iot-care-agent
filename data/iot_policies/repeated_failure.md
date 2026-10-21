@@ -1,8 +1,8 @@
 # 반복 재시작 방지와 현장 점검
 
-<!-- meta: {"id": "repeated_failure", "title": "반복 재시작 방지와 현장 점검", "issues": ["telemetry_delayed", "recovery_failed"], "tags": ["반복", "이력", "실패", "현장", "재시도", "중복"], "version": "1.0", "origin": "프로젝트 작성 시뮬레이션 점검 절차", "causes": []} -->
+<!-- meta: {"id": "repeated_failure", "title": "반복 재시작 방지와 현장 점검", "issues": ["telemetry_delayed", "recovery_failed"], "tags": ["반복", "이력", "실패", "현장", "재시도", "중복"], "version": "2.0", "origin": "프로젝트 가상 복구 정책", "causes": [], "source_type": "project_policy", "publisher": "IoT Care Agent", "source_url": null, "source_section": null, "retrieved_at": null, "applicable_models": []} -->
 
-> 가상 IoT 데모용 절차입니다. 실제 제조사 매뉴얼 또는 검증된 현장 고장 진단서가 아닙니다.
+> 프로젝트의 가상 수집기 복구 정책입니다. Shelly 제조사 매뉴얼이나 실제 장치 재부팅 기능이 아닙니다.
 
 ## 판별 근거
 이전 복구 결과가 미복구 또는 확인 불가이면 동일 상태에서 추가 재시작을 자동 실행하지 않는다. 본 데모는 장치별 시나리오당 복구 명령을 최대 한 번 허용한다.

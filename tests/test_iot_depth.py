@@ -43,13 +43,13 @@ class RetrievalPolicyTests(unittest.TestCase):
         self.assertIn("normal_sleep", [d["document_id"] for d in docs])
         self.assertNotIn("normal_operation", [d["document_id"] for d in docs])
         base = IoTSimulator().status("sensor-02")["data"]
-        for battery, age, issues in [(20,180,["low_battery"]),(21,180,[]),(21,181,["telemetry_delayed"])]:
-            self.assertEqual(assess_device({**base,"battery_pct":battery,"telemetry_age_seconds":age})["issues"], issues)
+        for battery, age, issues in [(20,360,["low_battery"]),(21,360,[]),(21,361,["telemetry_delayed"])]:
+            self.assertEqual(assess_device({**base,"model":"legacy_demo","report_interval_seconds":120,"battery_pct":battery,"telemetry_age_seconds":age})["issues"], issues)
         self.assertEqual(assess_device({**base,"report_interval_seconds":0})["issues"], ["invalid_data"])
 
     def test_no_recovery_on_bad_observation_or_sleep(self):
         base = IoTSimulator().status("sensor-02")["data"]
-        for changes in ({"battery_pct":False},{"battery_pct":101},{"connected":"true"},{"telemetry_age_seconds":-1}, {"battery_pct":None}):
+        for changes in ({"battery_pct":False},{"battery_pct":101},{"connected":"true"},{"telemetry_age_seconds":-1}):
             self.assertFalse(can_recover({**base,**changes}))
 
     def test_sources_candidates_and_unsupported_claims_are_checked(self):

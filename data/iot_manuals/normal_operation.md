@@ -1,15 +1,15 @@
-# 정상 장치의 정기 점검
+# Shelly H&T Gen3 측정과 보고 주기
 
-<!-- meta: {"id": "normal_operation", "title": "정상 장치의 정기 점검", "issues": ["healthy"], "tags": ["정상", "주기", "상태", "관측", "점검"], "version": "1.0", "origin": "프로젝트 작성 시뮬레이션 점검 절차", "causes": []} -->
+<!-- meta: {"id": "normal_operation", "title": "Shelly H&T Gen3 측정과 보고 주기", "issues": ["healthy"], "tags": ["정상", "주기", "측정", "전송", "보고", "USB", "배터리"], "version": "summary-2026-10-21", "origin": "Shelly 공식 문서 기반 한국어 요약", "source_type": "manufacturer_summary", "publisher": "Shelly", "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3", "source_title": "Shelly H&T Gen3", "source_section": "Measuring and reporting", "retrieved_at": "2026-10-21", "applicable_models": ["shelly_ht_gen3"], "causes": [], "section_power_sources": {"1": ["battery"], "2": ["usb"]}} -->
 
-> 가상 IoT 데모용 절차입니다. 실제 제조사 매뉴얼 또는 검증된 현장 고장 진단서가 아닙니다.
+> 공식 문서의 필요한 부분을 한국어로 요약했습니다. 원문 전체 번역이나 제조사가 작성한 한국어 매뉴얼은 아닙니다.
+> 원문: [Shelly H&T Gen3](https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3) · 절: Measuring and reporting · 확인: 2026-10-21
 
-## 판별 근거
-배터리·연결·수신 지연이 본 프로젝트의 기준을 만족하면 현재 관측 범위에서 정상이라고 안내한다. 이는 모든 고장 가능성을 배제하는 종합 진단이 아니다.
+## 전원별 보고 조건
+배터리에서는 매분 측정하지만 변화량 기준을 충족할 때 전송한다. 기본 보고 기준은 온도 0.5°C 또는 습도 5% 변화이며, 변화가 없어도 2시간마다 상태를 보고한다.
 
-## 원인 후보와 확인 한계
-추가 오류 로그나 실제 측정값의 품질은 이 데이터에 포함되지 않는다. 온습도 값의 정확도나 교정 상태까지 정상이라고 확대 해석하지 않는다.
+## USB와 배터리 구분
+USB 전원에서는 5분마다 측정·화면 갱신·보고 후 절전한다. 측정 주기와 서버 수신 주기를 같은 값으로 가정하지 않는다.
 
-## 조치와 결과 확인
-정상 장치에는 불필요한 재시작을 권하지 않는다. 현재 상태를 기록하고 이후 연결·수신 상태 변화가 있는지 확인한다.
-
+## 진단 적용 범위
+이 요약은 Shelly H&T Gen3에 적용한다. 보고 간격만으로 원인을 확정하지 않으며, 전원 방식과 현재 설정을 함께 확인한다.

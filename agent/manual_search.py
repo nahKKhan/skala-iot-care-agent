@@ -7,6 +7,19 @@ from collections import Counter
 from pathlib import Path
 
 MANUAL_DIR = Path(__file__).resolve().parent.parent / "data" / "iot_manuals"
+POLICY_DIR = MANUAL_DIR.parent / "iot_policies"
+SOURCE_FIELDS = ("source_type", "publisher", "source_url", "source_title", "source_section",
+                 "retrieved_at", "applicable_models")
+OFFICIAL_HOSTS = {"kb.shelly.cloud", "shelly-api-docs.shelly.cloud"}
+
+
+def source_description(document):
+    """검색·진단 답변에서 동일한 출처 표시를 사용한다."""
+    if document.get("source_type") == "manufacturer_summary":
+        return (f"제조사 문서 기반 요약 · {document['publisher']} · {document['source_section']}"
+                f" · 확인 {document['retrieved_at']}\n원문: {document['source_url']}")
+    return "프로젝트 가상 복구 정책 · 제조사 기능이 아닙니다."
+
 STOP = {"점검", "장치", "센서", "방법", "주세요", "알려", "문제", "확인", "해줘", "해줘요"}
 EXPANSIONS = {"안와": "수신 지연", "안와요": "수신 지연", "안들어": "수신 지연", "멈췄": "수집 중단",
               "꺼졌": "오프라인 연결", "방전": "배터리 전원", "잠자": "절전 기상",
@@ -31,26 +44,42 @@ class ManualIndex:
     def __init__(self, directory=MANUAL_DIR):
         self.chunks = []
         digest = hashlib.sha256()
-        for path in sorted(Path(directory).glob("*.md")):
+        folders = [Path(directory)]
+        if Path(directory).resolve() == MANUAL_DIR.resolve():
+            folders.append(POLICY_DIR)
+        paths = sorted(path for folder in folders for path in folder.glob("*.md"))
+        for path in paths:
             text = path.read_text(encoding="utf-8")
-            digest.update(path.name.encode() + text.encode())
+            digest.update(path.parent.name.encode() + path.name.encode() + text.encode())
             match = re.search(r"<!-- meta: (.*?) -->", text)
             if not match:
                 continue
             meta = json.loads(match.group(1))
+            if meta.get("source_type") == "manufacturer_summary":
+                from urllib.parse import urlparse
+                url = urlparse(meta.get("source_url", ""))
+                if (url.scheme != "https" or url.hostname not in OFFICIAL_HOSTS
+                    or not all(meta.get(key) for key in SOURCE_FIELDS)):
+                    raise ValueError(f"공식 문서 출처 정보가 불완전합니다: {path.name}")
             parts = re.split(r"^## (.+)$", text, flags=re.M)
             for number, (heading, body) in enumerate(zip(parts[1::2], parts[2::2]), 1):
                 causes = [{**c, "source_id": f"{meta['id']}#{number}"} for c in meta.get("causes", [])]
                 self.chunks.append({"source_id": f"{meta['id']}#{number}", "document_id": meta["id"],
                     "filename": path.name, "title": meta["title"], "section": heading,
                     "text": body.strip(), "issues": meta["issues"], "tags": meta["tags"],
-                    "causes": causes, "origin": meta["origin"], "version": meta["version"]})
+                    "causes": causes, "origin": meta["origin"], "version": meta["version"],
+                    "power_sources": meta.get("section_power_sources", {}).get(str(number), []),
+                    **{key: meta.get(key) for key in SOURCE_FIELDS}})
         self.version = digest.hexdigest()[:12]
         self.counts = [Counter(tokenize(" ".join([c['title'], c['section'], c['text'], *c['tags'], *c['issues']]))) for c in self.chunks]
         self.df = Counter(t for counts in self.counts for t in counts)
         self.avg_length = sum(map(lambda c: sum(c.values()), self.counts)) / max(len(self.counts), 1)
 
-    def search(self, query, *, issues=None, operating_state=None, top_k=3):
+    def search(self, query, *, issues=None, operating_state=None, top_k=3, model=None, power_source=None):
+        if power_source is None:
+            battery_query, usb_query = "배터리" in query, "usb" in query.lower()
+            if battery_query != usb_query:
+                power_source = "battery" if battery_query else "usb"
         expanded = query.lower()
         for key, value in EXPANSIONS.items():
             if key in expanded:
@@ -61,6 +90,10 @@ class ManualIndex:
             allowed.add("sleeping")
         ranked = []
         for chunk, counts in zip(self.chunks, self.counts):
+            if power_source is not None and chunk["power_sources"] and power_source not in chunk["power_sources"]:
+                continue
+            if model is not None and chunk.get("applicable_models") and model not in chunk["applicable_models"]:
+                continue
             if allowed is not None and not allowed.intersection(chunk["issues"]):
                 continue
             length = sum(counts.values())
@@ -82,4 +115,7 @@ class ManualIndex:
                 break
         return {"method": "bm25-ko-bigram", "index_version": self.version,
                 "document_count": len({c['document_id'] for c in self.chunks}),
-                "chunk_count": len(self.chunks), "query": query, "documents": selected}
+                "chunk_count": len(self.chunks),
+                "manufacturer_document_count": len({c["document_id"] for c in self.chunks if c.get("source_type") == "manufacturer_summary"}),
+                "policy_document_count": len({c["document_id"] for c in self.chunks if c.get("source_type") == "project_policy"}),
+                "query": query, "documents": selected}

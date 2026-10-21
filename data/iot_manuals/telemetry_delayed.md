@@ -1,15 +1,15 @@
-# 데이터 수신 지연 점검
+# Shelly H&T Gen3 데이터 수신 지연 점검
 
-<!-- meta: {"id": "telemetry_delayed", "title": "데이터 수신 지연 점검", "issues": ["telemetry_delayed"], "tags": ["데이터", "수신", "지연", "갱신", "끊김", "멈춤"], "version": "1.0", "origin": "프로젝트 작성 시뮬레이션 점검 절차", "causes": [{"id": "collection_stall", "title": "수집 작업 중단 가능성", "check": "수집 작업 로그와 마지막 샘플 생성 시각을 확인한다."}]} -->
+<!-- meta: {"id": "telemetry_delayed", "title": "Shelly H&T Gen3 데이터 수신 지연 점검", "issues": ["telemetry_delayed"], "tags": ["데이터", "수신", "지연", "갱신", "멈춤", "전송", "보고"], "version": "summary-2026-10-21", "origin": "Shelly 공식 문서 기반 한국어 요약", "source_type": "manufacturer_summary", "publisher": "Shelly", "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide", "source_title": "Shelly H&T Gen3 web interface guide", "source_section": "Networks / MQTT; Device settings", "retrieved_at": "2026-10-21", "applicable_models": ["shelly_ht_gen3"], "causes": [{"id": "report_config", "title": "보고·전송 설정 불일치 가능성", "check": "현장에서 전원 방식과 보고 임계값, MQTT 사용 여부와 상태 알림 설정을 확인한다."}]} -->
 
-> 가상 IoT 데모용 절차입니다. 실제 제조사 매뉴얼 또는 검증된 현장 고장 진단서가 아닙니다.
+> 공식 문서의 필요한 부분을 한국어로 요약했습니다. 원문 전체 번역이나 제조사가 작성한 한국어 매뉴얼은 아닙니다.
+> 원문: [Shelly H&T Gen3 web interface guide](https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide) · 절: Networks / MQTT; Device settings · 확인: 2026-10-21
 
-## 판별 근거
-연결됨은 통신 가능한 상태라는 관측값이며 새 센서 데이터 수신을 보장하지 않는다. 본 데모는 마지막 수신 경과 시간이 전송 주기의 3배를 초과하면 수신 지연으로 분류한다. 원인을 확정한 결과는 아니다.
+## 데이터 갱신 확인
+제조사 웹 설정에는 MQTT 사용 여부와 상태 알림 설정이 있다. 서버 갱신이 멈췄다면 사용 중인 전송 경로의 설정을 확인할 수 있다.
 
 ## 원인 후보와 확인 한계
-수집 작업 중단 가능성과 전송 경로 지연 가능성을 구분해야 한다. 장치 로그·게이트웨이 로그가 현재 입력에 없으면 확인하지 못한 정보로 명시한다. 배터리 잔량만으로 전원 이상을 배제하지 않는다.
+보고·전송 설정 불일치는 추가 확인할 후보이다. 현재 상태에 MQTT 설정값이 없으므로 잘못 설정됐다고 단정하지 않는다.
 
-## 조치와 결과 확인
-먼저 장치 상태를 다시 조회한다. 연결됨, 배터리 20% 초과, restart_collection 지원, 이번 시나리오의 복구 시도 0회인 경우에만 사용자에게 가상 복구 버튼을 제시한다. 재시작하지 않았다는 사실 자체를 지연 원인으로 설명하지 않는다.
-
+## 조치 구분
+웹 설정의 Reboot는 장치 재부팅 기능이다. 이 프로젝트의 restart_collection은 가상 수집기 동작이며 제조사 재부팅 API가 아니다. 제조사 재부팅이나 초기화는 실행하지 않는다.

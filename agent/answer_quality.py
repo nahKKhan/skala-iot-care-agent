@@ -38,6 +38,9 @@ def check_answer(answer, *, device_id, data, assessment, documents, candidates):
                   r"현재.{0,6}전원공급불안정"]
     if any(re.search(pattern, normalized) for pattern in bad_claims):
         errors.append("원인·원격 실행·복구 완료를 근거 없이 단정하지 마세요.")
+    if data.get("model") == "shelly_ht_gen3" and re.search(r"Shelly|실제장치|실제제품", normalized, re.I) and re.search(r"재부팅|재시작", normalized):
+        if not re.search(r"않|아니|불가|보류|가상", normalized):
+            errors.append("실제 Shelly 장치 재부팅을 가상 수집기 복구와 혼동하면 안 됩니다.")
     if not can_recover(data, assessment):
         for sentence in re.split(r"[.!?。]|\n", text):
             if re.search(r"재시작|restart_collection", sentence) and not re.search(r"않|금지|불가|지원하지|필요없|하지|보류|어렵|권하지", sentence):

@@ -91,7 +91,7 @@ class IoTSimulator:
             self._append_log(device_id, "WARN", "gateway", "RESTART_REJECTED", error)
             return {"ok": False, "device_id": device_id, "error": error}
         data["recovery_attempts"] += 1
-        self._append_log(device_id, "INFO", "gateway", "RESTART_REQUEST_ACCEPTED", "수집 모듈 재시작 요청을 접수했습니다. 새 데이터 수신은 별도 확인이 필요합니다.")
+        self._append_log(device_id, "INFO", "gateway", "RESTART_REQUEST_ACCEPTED", "프로젝트 가상 수집기 재시작 요청을 접수했습니다. 새 데이터 수신은 별도 확인이 필요합니다.")
         outcome = self.outcomes.get(device_id, "no_data")
         if outcome == "recover":
             data["telemetry_age_seconds"] = 0
@@ -103,7 +103,7 @@ class IoTSimulator:
         else:
             self._append_log(device_id, "WARN", "gateway", "TELEMETRY_STILL_MISSING", "명령 접수 후 새 데이터 수신이 관측되지 않았습니다.")
         result = {"ok": True, "device_id": device_id, "command_accepted": True, "simulated": True,
-                  "message": "가상 재시작 명령을 접수했습니다. 장치 상태를 다시 조회하세요."}
+                  "message": "가상 수집기 재시작 명령을 접수했습니다. 실제 Shelly 재부팅은 실행하지 않습니다. 장치 상태를 다시 조회하세요."}
         if request_id:
             self.requests[request_id] = copy.deepcopy(result)
         return result

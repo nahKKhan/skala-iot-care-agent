@@ -13,6 +13,8 @@ MANUAL_INDEX = ManualIndex()
 def list_devices() -> dict:
     """가상 장치 목록과 상태 조회 가능 여부. 숨겨진 시나리오 정답은 반환하지 않는다."""
     return {"ok": True, "devices": [{"device_id": key, "name": value["name"],
+            "model": value.get("model"), "model_name": value.get("model_name"),
+            "simulated": True, "power_source": value.get("power_source"),
             "available": key not in SIMULATOR.unavailable} for key, value in SIMULATOR.devices.items()]}
 
 
@@ -48,9 +50,10 @@ def reset_all_device_scenarios() -> dict:
 
 @mcp.tool()
 def search_iot_manuals(query: str, issues: list[str] | None = None,
-                       operating_state: str | None = None, top_k: int = 3) -> dict:
-    """IoT 매뉴얼 문단을 BM25로 검색하고 문서·문단 ID·점수·본문·후보 정보를 반환한다."""
-    return MANUAL_INDEX.search(query, issues=issues, operating_state=operating_state, top_k=top_k)
+                       operating_state: str | None = None, top_k: int = 3,
+                       model: str | None = None, power_source: str | None = None) -> dict:
+    """공식 문서 기반 한국어 요약과 별도 프로젝트 정책을 BM25로 검색한다. 출처·원문 URL·적용 모델을 반환하며 model 지정 시 다른 모델 문서를 제외한다."""
+    return MANUAL_INDEX.search(query, issues=issues, operating_state=operating_state, top_k=top_k, model=model, power_source=power_source)
 
 
 @mcp.tool()

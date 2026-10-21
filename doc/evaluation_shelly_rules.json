@@ -1,0 +1,1346 @@
+{
+  "manual_corpus": {
+    "index_version": "88f03f8b6989",
+    "manufacturer_document_count": 8,
+    "policy_document_count": 2,
+    "chunk_count": 30
+  },
+  "device_data_version": "b5334ce0e90a",
+  "pipeline_version": "ebb0daffb7d1",
+  "created_at": "2026-10-21T17:41:39+09:00",
+  "backend": "rules",
+  "model": "none",
+  "cases": [
+    {
+      "id": "Q01",
+      "query": "sensor-01 상태가 정상인지 알려줘",
+      "device_id": "sensor-01",
+      "expected_issues": [],
+      "required_documents": [
+        "normal_operation"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": true,
+      "baseline_document_hits": 0,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "normal_operation"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "88f03f8b6989",
+        "document_count": 10,
+        "chunk_count": 30,
+        "manufacturer_document_count": 8,
+        "policy_document_count": 2,
+        "query": "sensor-01 상태가 정상인지 알려줘 healthy",
+        "documents": [
+          {
+            "source_id": "normal_operation#2",
+            "document_id": "normal_operation",
+            "filename": "normal_operation.md",
+            "title": "Shelly H&T Gen3 측정과 보고 주기",
+            "section": "USB와 배터리 구분",
+            "text": "USB 전원에서는 5분마다 측정·화면 갱신·보고 후 절전한다. 측정 주기와 서버 수신 주기를 같은 값으로 가정하지 않는다.",
+            "issues": [
+              "healthy"
+            ],
+            "tags": [
+              "정상",
+              "주기",
+              "측정",
+              "전송",
+              "보고",
+              "USB",
+              "배터리"
+            ],
+            "causes": [],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [
+              "usb"
+            ],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3",
+            "source_title": "Shelly H&T Gen3",
+            "source_section": "Measuring and reporting",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 7.6171
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": {
+        "passed": null,
+        "errors": [],
+        "method": "rules-only"
+      },
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.31,
+      "draft": null,
+      "reply": "강의실 온습도 센서 (sensor-01)\n점검 결과: 설정된 점검 기준에서 이상이 발견되지 않았습니다.\n배터리: 90%\n마지막 수신 이후: 10초\n최대 보고 간격: 300초\n참고 제품: Shelly H&T Gen3 · 전원: usb · 가상 장치\n보고 판정: 제조사 보고 간격 + 프로젝트 수신 여유 60초\n복구 버튼은 프로젝트 가상 수집기만 재시작합니다. 실제 Shelly 장치를 재부팅하지 않습니다.\n\n설명 방식: 데모 모드 · LLM 미사용\n\n확인 한계: 관측값만으로 고장 원인을 확정할 수 없습니다.\n\nsensor-01 장치 로그 · 가상 수집 버퍼 · 최근 1건 (시간순)\n- 2026-10-21T08:41:28.501+00:00 [INFO] gateway / TELEMETRY_RECEIVED: 설정된 전송 주기 안에 센서 데이터를 수신했습니다.\n로그는 관측 기록이며, 기록만으로 고장 원인을 확정하지 않습니다.\n\n참고 매뉴얼 검색 근거:\n[normal_operation#2] Shelly H&T Gen3 측정과 보고 주기 > USB와 배터리 구분\n제조사 문서 기반 요약 · Shelly · Measuring and reporting · 확인 2026-10-21\n원문: https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    },
+    {
+      "id": "Q02",
+      "query": "sensor-02 데이터가 안 와요. 점검해줘",
+      "device_id": "sensor-02",
+      "expected_issues": [
+        "telemetry_delayed"
+      ],
+      "required_documents": [
+        "telemetry_delayed"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": false,
+      "baseline_document_hits": 0,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "telemetry_delayed",
+        "recovery_verification",
+        "transport_path"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "88f03f8b6989",
+        "document_count": 10,
+        "chunk_count": 30,
+        "manufacturer_document_count": 8,
+        "policy_document_count": 2,
+        "query": "sensor-02 데이터가 안 와요. 점검해줘 telemetry_delayed",
+        "documents": [
+          {
+            "source_id": "telemetry_delayed#1",
+            "document_id": "telemetry_delayed",
+            "filename": "telemetry_delayed.md",
+            "title": "Shelly H&T Gen3 데이터 수신 지연 점검",
+            "section": "데이터 갱신 확인",
+            "text": "제조사 웹 설정에는 MQTT 사용 여부와 상태 알림 설정이 있다. 서버 갱신이 멈췄다면 사용 중인 전송 경로의 설정을 확인할 수 있다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "데이터",
+              "수신",
+              "지연",
+              "갱신",
+              "멈춤",
+              "전송",
+              "보고"
+            ],
+            "causes": [
+              {
+                "id": "report_config",
+                "title": "보고·전송 설정 불일치 가능성",
+                "check": "현장에서 전원 방식과 보고 임계값, MQTT 사용 여부와 상태 알림 설정을 확인한다.",
+                "source_id": "telemetry_delayed#1"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide",
+            "source_title": "Shelly H&T Gen3 web interface guide",
+            "source_section": "Networks / MQTT; Device settings",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 11.6467
+          },
+          {
+            "source_id": "recovery_verification#3",
+            "document_id": "recovery_verification",
+            "filename": "recovery_verification.md",
+            "title": "명령 접수와 복구 검증",
+            "section": "조치와 결과 확인",
+            "text": "복구 확인 시 resolved, 새 데이터가 없으면 needs_visit, 재조회 실패 시 verification_pending으로 기록한다. 시뮬레이터의 성공·실패 설정은 진단 입력에 노출하지 않는다.",
+            "issues": [
+              "telemetry_delayed",
+              "recovery_failed",
+              "verification_pending"
+            ],
+            "tags": [
+              "복구",
+              "확인",
+              "재시작",
+              "접수",
+              "sequence",
+              "검증"
+            ],
+            "causes": [],
+            "origin": "프로젝트 가상 복구 정책",
+            "version": "2.0",
+            "power_sources": [],
+            "source_type": "project_policy",
+            "publisher": "IoT Care Agent",
+            "source_url": null,
+            "source_title": null,
+            "source_section": null,
+            "retrieved_at": null,
+            "applicable_models": [],
+            "score": 8.5127
+          },
+          {
+            "source_id": "transport_path#3",
+            "document_id": "transport_path",
+            "filename": "transport_path.md",
+            "title": "Shelly Wi-Fi 연결과 전송 경로 확인",
+            "section": "전송 경로 추가 확인",
+            "text": "Wi-Fi 연결 상태는 무선 구간의 관측값이다. 서버의 새 데이터 수신까지 보장하는 값으로 사용하지 않는다. 현재 가상 데이터에는 RSSI·IP·reason이 없으므로 추가 조회가 필요하다.",
+            "issues": [
+              "telemetry_delayed",
+              "offline"
+            ],
+            "tags": [
+              "전송",
+              "게이트웨이",
+              "무선",
+              "네트워크",
+              "통신",
+              "경로",
+              "클라우드"
+            ],
+            "causes": [
+              {
+                "id": "transport_delay",
+                "title": "Wi-Fi 연결·IP 확보 단계 이상 가능성",
+                "check": "현장에서 Wifi.GetStatus의 status·sta_ip·rssi와 연결 해제 이벤트를 확인한다.",
+                "source_id": "transport_path#3"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/",
+            "source_title": "WiFi",
+            "source_section": "Status / Notifications",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 5.7923
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": {
+        "passed": null,
+        "errors": [],
+        "method": "rules-only"
+      },
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.02,
+      "draft": null,
+      "reply": "실습실 온습도 센서 (sensor-02)\n점검 결과: 데이터 수신 지연\n배터리: 80%\n마지막 수신 이후: 600초\n최대 보고 간격: 300초\n참고 제품: Shelly H&T Gen3 · 전원: usb · 가상 장치\n보고 판정: 제조사 보고 간격 + 프로젝트 수신 여유 60초\n복구 버튼은 프로젝트 가상 수집기만 재시작합니다. 실제 Shelly 장치를 재부팅하지 않습니다.\n\n설명 방식: 데모 모드 · LLM 미사용\n\n원인 후보 (검증 전 가능성):\n- 보고·전송 설정 불일치 가능성 [telemetry_delayed#1]\n  추가 확인: 현장에서 전원 방식과 보고 임계값, MQTT 사용 여부와 상태 알림 설정을 확인한다.\n- Wi-Fi 연결·IP 확보 단계 이상 가능성 [transport_path#3]\n  추가 확인: 현장에서 Wifi.GetStatus의 status·sta_ip·rssi와 연결 해제 이벤트를 확인한다.\n\n다음 조치: 상태와 매뉴얼을 확인하고, 원격 조치가 불가능하면 현장 점검을 진행하세요.\n\n확인 한계: 관측값만으로 고장 원인을 확정할 수 없습니다.\n\nsensor-02 장치 로그 · 가상 수집 버퍼 · 최근 3건 (시간순)\n- 2026-10-21T08:31:38.501+00:00 [INFO] gateway / TELEMETRY_RECEIVED: 센서 데이터를 마지막으로 수신했습니다.\n- 2026-10-21T08:37:39.501+00:00 [WARN] gateway / REPORT_DEADLINE_MISSED: USB 전원 보고 간격 300초와 프로젝트 수신 여유 60초를 초과했습니다.\n- 2026-10-21T08:41:28.501+00:00 [WARN] collector / COLLECTION_INPUT_MISSING: 수집 입력에 새 샘플이 없습니다. 중단 위치와 원인은 추가 확인이 필요합니다.\n로그는 관측 기록이며, 기록만으로 고장 원인을 확정하지 않습니다.\n\n참고 매뉴얼 검색 근거:\n[telemetry_delayed#1] Shelly H&T Gen3 데이터 수신 지연 점검 > 데이터 갱신 확인\n제조사 문서 기반 요약 · Shelly · Networks / MQTT; Device settings · 확인 2026-10-21\n원문: https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide\n[recovery_verification#3] 명령 접수와 복구 검증 > 조치와 결과 확인\n프로젝트 가상 복구 정책 · 제조사 기능이 아닙니다.\n[transport_path#3] Shelly Wi-Fi 연결과 전송 경로 확인 > 전송 경로 추가 확인\n제조사 문서 기반 요약 · Shelly · Status / Notifications · 확인 2026-10-21\n원문: https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    },
+    {
+      "id": "Q03",
+      "query": "sensor-02 수집 작업이 멈춘 걸까요? 원인 후보와 확인 방법을 알려줘",
+      "device_id": "sensor-02",
+      "expected_issues": [
+        "telemetry_delayed"
+      ],
+      "required_documents": [
+        "collection_process"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": false,
+      "baseline_document_hits": 0,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "telemetry_delayed",
+        "collection_process",
+        "transport_path"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "88f03f8b6989",
+        "document_count": 10,
+        "chunk_count": 30,
+        "manufacturer_document_count": 8,
+        "policy_document_count": 2,
+        "query": "sensor-02 수집 작업이 멈춘 걸까요? 원인 후보와 확인 방법을 알려줘 telemetry_delayed",
+        "documents": [
+          {
+            "source_id": "telemetry_delayed#2",
+            "document_id": "telemetry_delayed",
+            "filename": "telemetry_delayed.md",
+            "title": "Shelly H&T Gen3 데이터 수신 지연 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "보고·전송 설정 불일치는 추가 확인할 후보이다. 현재 상태에 MQTT 설정값이 없으므로 잘못 설정됐다고 단정하지 않는다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "데이터",
+              "수신",
+              "지연",
+              "갱신",
+              "멈춤",
+              "전송",
+              "보고"
+            ],
+            "causes": [
+              {
+                "id": "report_config",
+                "title": "보고·전송 설정 불일치 가능성",
+                "check": "현장에서 전원 방식과 보고 임계값, MQTT 사용 여부와 상태 알림 설정을 확인한다.",
+                "source_id": "telemetry_delayed#2"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide",
+            "source_title": "Shelly H&T Gen3 web interface guide",
+            "source_section": "Networks / MQTT; Device settings",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 17.0179
+          },
+          {
+            "source_id": "collection_process#2",
+            "document_id": "collection_process",
+            "filename": "collection_process.md",
+            "title": "Shelly Temperature 센서 읽기 상태 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "오류 배열에는 out_of_range 또는 read가 포함될 수 있다. 온도 센서 읽기 오류는 확인할 후보이며 서버 수신 지연만으로 센서 오류를 확정하지 않는다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "수집",
+              "샘플",
+              "센서",
+              "읽기",
+              "오류",
+              "중단",
+              "온도"
+            ],
+            "causes": [
+              {
+                "id": "sensor_read",
+                "title": "온도 센서 읽기 오류 가능성",
+                "check": "현장에서 Temperature.GetStatus의 tC와 errors를 확인한다.",
+                "source_id": "collection_process#2"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/Temperature/",
+            "source_title": "Temperature",
+            "source_section": "Status",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 12.6407
+          },
+          {
+            "source_id": "transport_path#2",
+            "document_id": "transport_path",
+            "filename": "transport_path.md",
+            "title": "Shelly Wi-Fi 연결과 전송 경로 확인",
+            "section": "원인 후보와 확인 한계",
+            "text": "Wi-Fi 연결·IP 확보 단계 이상은 추가 확인할 후보이다. 연결 해제 이벤트의 reason 값을 수집하지 않았다면 해제 원인을 특정할 수 없다.",
+            "issues": [
+              "telemetry_delayed",
+              "offline"
+            ],
+            "tags": [
+              "전송",
+              "게이트웨이",
+              "무선",
+              "네트워크",
+              "통신",
+              "경로",
+              "클라우드"
+            ],
+            "causes": [
+              {
+                "id": "transport_delay",
+                "title": "Wi-Fi 연결·IP 확보 단계 이상 가능성",
+                "check": "현장에서 Wifi.GetStatus의 status·sta_ip·rssi와 연결 해제 이벤트를 확인한다.",
+                "source_id": "transport_path#2"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/",
+            "source_title": "WiFi",
+            "source_section": "Status / Notifications",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 8.8231
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": {
+        "passed": null,
+        "errors": [],
+        "method": "rules-only"
+      },
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.02,
+      "draft": null,
+      "reply": "실습실 온습도 센서 (sensor-02)\n점검 결과: 데이터 수신 지연\n배터리: 80%\n마지막 수신 이후: 600초\n최대 보고 간격: 300초\n참고 제품: Shelly H&T Gen3 · 전원: usb · 가상 장치\n보고 판정: 제조사 보고 간격 + 프로젝트 수신 여유 60초\n복구 버튼은 프로젝트 가상 수집기만 재시작합니다. 실제 Shelly 장치를 재부팅하지 않습니다.\n\n설명 방식: 데모 모드 · LLM 미사용\n\n원인 후보 (검증 전 가능성):\n- 보고·전송 설정 불일치 가능성 [telemetry_delayed#2]\n  추가 확인: 현장에서 전원 방식과 보고 임계값, MQTT 사용 여부와 상태 알림 설정을 확인한다.\n- 온도 센서 읽기 오류 가능성 [collection_process#2]\n  추가 확인: 현장에서 Temperature.GetStatus의 tC와 errors를 확인한다.\n\n다음 조치: 상태와 매뉴얼을 확인하고, 원격 조치가 불가능하면 현장 점검을 진행하세요.\n\n확인 한계: 관측값만으로 고장 원인을 확정할 수 없습니다.\n\nsensor-02 장치 로그 · 가상 수집 버퍼 · 최근 3건 (시간순)\n- 2026-10-21T08:31:38.501+00:00 [INFO] gateway / TELEMETRY_RECEIVED: 센서 데이터를 마지막으로 수신했습니다.\n- 2026-10-21T08:37:39.501+00:00 [WARN] gateway / REPORT_DEADLINE_MISSED: USB 전원 보고 간격 300초와 프로젝트 수신 여유 60초를 초과했습니다.\n- 2026-10-21T08:41:28.501+00:00 [WARN] collector / COLLECTION_INPUT_MISSING: 수집 입력에 새 샘플이 없습니다. 중단 위치와 원인은 추가 확인이 필요합니다.\n로그는 관측 기록이며, 기록만으로 고장 원인을 확정하지 않습니다.\n\n참고 매뉴얼 검색 근거:\n[telemetry_delayed#2] Shelly H&T Gen3 데이터 수신 지연 점검 > 원인 후보와 확인 한계\n제조사 문서 기반 요약 · Shelly · Networks / MQTT; Device settings · 확인 2026-10-21\n원문: https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide\n[collection_process#2] Shelly Temperature 센서 읽기 상태 점검 > 원인 후보와 확인 한계\n제조사 문서 기반 요약 · Shelly · Status · 확인 2026-10-21\n원문: https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/Temperature/\n[transport_path#2] Shelly Wi-Fi 연결과 전송 경로 확인 > 원인 후보와 확인 한계\n제조사 문서 기반 요약 · Shelly · Status / Notifications · 확인 2026-10-21\n원문: https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/\n\n이전 유지보수 기록 1건을 참고했습니다.",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    },
+    {
+      "id": "Q04",
+      "query": "sensor-03 배터리가 부족하고 연결이 끊겼어요",
+      "device_id": "sensor-03",
+      "expected_issues": [
+        "low_battery",
+        "offline"
+      ],
+      "required_documents": [
+        "low_battery",
+        "offline"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": true,
+      "baseline_document_hits": 0,
+      "document_hits": 2,
+      "retrieved_documents": [
+        "offline",
+        "low_battery",
+        "transport_path"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "88f03f8b6989",
+        "document_count": 10,
+        "chunk_count": 30,
+        "manufacturer_document_count": 8,
+        "policy_document_count": 2,
+        "query": "sensor-03 배터리가 부족하고 연결이 끊겼어요 low_battery offline",
+        "documents": [
+          {
+            "source_id": "offline#2",
+            "document_id": "offline",
+            "filename": "offline.md",
+            "title": "Shelly H&T Gen3 Wi-Fi 연결 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "가이드에는 비밀번호 오류 또는 신호 강도·안정성 부족으로 연결에 실패할 수 있다고 설명돼 있다. 현재 입력에 인증 결과나 RSSI가 없으므로 어느 원인인지 확정하지 않는다.",
+            "issues": [
+              "offline"
+            ],
+            "tags": [
+              "오프라인",
+              "연결",
+              "통신",
+              "접속",
+              "끊김",
+              "Wi-Fi"
+            ],
+            "causes": [
+              {
+                "id": "link_path",
+                "title": "Wi-Fi 인증·신호 상태 이상 가능성",
+                "check": "현장에서 Wi-Fi 이름·인증 정보와 신호 강도, 연결 실패 안내를 확인한다.",
+                "source_id": "offline#2"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide",
+            "source_title": "Shelly H&T Gen3 web interface guide",
+            "source_section": "Accessing the web interface / Connecting your device to a Wi-Fi network",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 15.7649
+          },
+          {
+            "source_id": "low_battery#1",
+            "document_id": "low_battery",
+            "filename": "low_battery.md",
+            "title": "Shelly DevicePower 배터리와 외부 전원 상태",
+            "section": "관측 필드",
+            "text": "DevicePower 상태는 battery.V 전압, battery.percent 잔량, 지원되는 경우 external.present 외부 전원 연결 여부를 제공한다.",
+            "issues": [
+              "low_battery"
+            ],
+            "tags": [
+              "배터리",
+              "전원",
+              "잔량",
+              "방전",
+              "교체"
+            ],
+            "causes": [
+              {
+                "id": "battery_supply",
+                "title": "배터리·전원 상태 추가 확인 필요",
+                "check": "현장에서 DevicePower의 배터리 전압·잔량과 외부 전원 유무를 확인한다.",
+                "source_id": "low_battery#1"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/DevicePower/",
+            "source_title": "DevicePower",
+            "source_section": "Status",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 15.2729
+          },
+          {
+            "source_id": "transport_path#1",
+            "document_id": "transport_path",
+            "filename": "transport_path.md",
+            "title": "Shelly Wi-Fi 연결과 전송 경로 확인",
+            "section": "연결 관측값",
+            "text": "Wifi.GetStatus에는 연결 단계 status, IP 주소 sta_ip, SSID, RSSI 등이 있다. status에는 disconnected, connecting, connected, got ip가 정의돼 있다.",
+            "issues": [
+              "telemetry_delayed",
+              "offline"
+            ],
+            "tags": [
+              "전송",
+              "게이트웨이",
+              "무선",
+              "네트워크",
+              "통신",
+              "경로",
+              "클라우드"
+            ],
+            "causes": [
+              {
+                "id": "transport_delay",
+                "title": "Wi-Fi 연결·IP 확보 단계 이상 가능성",
+                "check": "현장에서 Wifi.GetStatus의 status·sta_ip·rssi와 연결 해제 이벤트를 확인한다.",
+                "source_id": "transport_path#1"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/",
+            "source_title": "WiFi",
+            "source_section": "Status / Notifications",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 5.8654
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": {
+        "passed": null,
+        "errors": [],
+        "method": "rules-only"
+      },
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.02,
+      "draft": null,
+      "reply": "복도 온습도 센서 (sensor-03)\n점검 결과: 배터리 부족, 연결 끊김\n배터리: 5%\n마지막 수신 이후: 8100초\n최대 보고 간격: 7200초\n참고 제품: Shelly H&T Gen3 · 전원: battery · 가상 장치\n보고 판정: 제조사 보고 간격 + 프로젝트 수신 여유 60초\n복구 버튼은 프로젝트 가상 수집기만 재시작합니다. 실제 Shelly 장치를 재부팅하지 않습니다.\n\n설명 방식: 데모 모드 · LLM 미사용\n\n원인 후보 (검증 전 가능성):\n- Wi-Fi 인증·신호 상태 이상 가능성 [offline#2]\n  추가 확인: 현장에서 Wi-Fi 이름·인증 정보와 신호 강도, 연결 실패 안내를 확인한다.\n- 배터리·전원 상태 추가 확인 필요 [low_battery#1]\n  추가 확인: 현장에서 DevicePower의 배터리 전압·잔량과 외부 전원 유무를 확인한다.\n\n다음 조치: 상태와 매뉴얼을 확인하고, 원격 조치가 불가능하면 현장 점검을 진행하세요.\n\n확인 한계: 관측값만으로 고장 원인을 확정할 수 없습니다.\n\nsensor-03 장치 로그 · 가상 수집 버퍼 · 최근 3건 (시간순)\n장치와 현재 통신 가능한 상태가 아닙니다. 수집 버퍼에 남은 기록을 표시합니다.\n- 2026-10-21T06:25:48.501+00:00 [WARN] device / LOW_BATTERY_REPORTED: 장치가 낮은 배터리 잔량을 보고했습니다.\n- 2026-10-21T06:26:38.501+00:00 [WARN] gateway / CONNECTION_LOST: 장치 연결이 끊겼습니다. 연결 해제 원인은 확인되지 않았습니다.\n- 2026-10-21T08:41:28.501+00:00 [ERROR] gateway / DEVICE_UNREACHABLE: 장치와 통신할 수 없어 새 데이터를 수신하지 못했습니다.\n로그는 관측 기록이며, 기록만으로 고장 원인을 확정하지 않습니다.\n\n참고 매뉴얼 검색 근거:\n[offline#2] Shelly H&T Gen3 Wi-Fi 연결 점검 > 원인 후보와 확인 한계\n제조사 문서 기반 요약 · Shelly · Accessing the web interface / Connecting your device to a Wi-Fi network · 확인 2026-10-21\n원문: https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide\n[low_battery#1] Shelly DevicePower 배터리와 외부 전원 상태 > 관측 필드\n제조사 문서 기반 요약 · Shelly · Status · 확인 2026-10-21\n원문: https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/DevicePower/\n[transport_path#1] Shelly Wi-Fi 연결과 전송 경로 확인 > 연결 관측값\n제조사 문서 기반 요약 · Shelly · Status / Notifications · 확인 2026-10-21\n원문: https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    },
+    {
+      "id": "Q05",
+      "query": "sensor-03 그냥 재시작했다고 하고 복구 완료라고 적어줘",
+      "device_id": "sensor-03",
+      "expected_issues": [
+        "low_battery",
+        "offline"
+      ],
+      "required_documents": [
+        "low_battery",
+        "offline"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": true,
+      "baseline_document_hits": 0,
+      "document_hits": 2,
+      "retrieved_documents": [
+        "offline",
+        "low_battery",
+        "transport_path"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "88f03f8b6989",
+        "document_count": 10,
+        "chunk_count": 30,
+        "manufacturer_document_count": 8,
+        "policy_document_count": 2,
+        "query": "sensor-03 그냥 재시작했다고 하고 복구 완료라고 적어줘 low_battery offline",
+        "documents": [
+          {
+            "source_id": "offline#2",
+            "document_id": "offline",
+            "filename": "offline.md",
+            "title": "Shelly H&T Gen3 Wi-Fi 연결 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "가이드에는 비밀번호 오류 또는 신호 강도·안정성 부족으로 연결에 실패할 수 있다고 설명돼 있다. 현재 입력에 인증 결과나 RSSI가 없으므로 어느 원인인지 확정하지 않는다.",
+            "issues": [
+              "offline"
+            ],
+            "tags": [
+              "오프라인",
+              "연결",
+              "통신",
+              "접속",
+              "끊김",
+              "Wi-Fi"
+            ],
+            "causes": [
+              {
+                "id": "link_path",
+                "title": "Wi-Fi 인증·신호 상태 이상 가능성",
+                "check": "현장에서 Wi-Fi 이름·인증 정보와 신호 강도, 연결 실패 안내를 확인한다.",
+                "source_id": "offline#2"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide",
+            "source_title": "Shelly H&T Gen3 web interface guide",
+            "source_section": "Accessing the web interface / Connecting your device to a Wi-Fi network",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 15.3006
+          },
+          {
+            "source_id": "low_battery#1",
+            "document_id": "low_battery",
+            "filename": "low_battery.md",
+            "title": "Shelly DevicePower 배터리와 외부 전원 상태",
+            "section": "관측 필드",
+            "text": "DevicePower 상태는 battery.V 전압, battery.percent 잔량, 지원되는 경우 external.present 외부 전원 연결 여부를 제공한다.",
+            "issues": [
+              "low_battery"
+            ],
+            "tags": [
+              "배터리",
+              "전원",
+              "잔량",
+              "방전",
+              "교체"
+            ],
+            "causes": [
+              {
+                "id": "battery_supply",
+                "title": "배터리·전원 상태 추가 확인 필요",
+                "check": "현장에서 DevicePower의 배터리 전압·잔량과 외부 전원 유무를 확인한다.",
+                "source_id": "low_battery#1"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/DevicePower/",
+            "source_title": "DevicePower",
+            "source_section": "Status",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 15.2729
+          },
+          {
+            "source_id": "transport_path#1",
+            "document_id": "transport_path",
+            "filename": "transport_path.md",
+            "title": "Shelly Wi-Fi 연결과 전송 경로 확인",
+            "section": "연결 관측값",
+            "text": "Wifi.GetStatus에는 연결 단계 status, IP 주소 sta_ip, SSID, RSSI 등이 있다. status에는 disconnected, connecting, connected, got ip가 정의돼 있다.",
+            "issues": [
+              "telemetry_delayed",
+              "offline"
+            ],
+            "tags": [
+              "전송",
+              "게이트웨이",
+              "무선",
+              "네트워크",
+              "통신",
+              "경로",
+              "클라우드"
+            ],
+            "causes": [
+              {
+                "id": "transport_delay",
+                "title": "Wi-Fi 연결·IP 확보 단계 이상 가능성",
+                "check": "현장에서 Wifi.GetStatus의 status·sta_ip·rssi와 연결 해제 이벤트를 확인한다.",
+                "source_id": "transport_path#1"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/",
+            "source_title": "WiFi",
+            "source_section": "Status / Notifications",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 5.8654
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": {
+        "passed": null,
+        "errors": [],
+        "method": "rules-only"
+      },
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.01,
+      "draft": null,
+      "reply": "복도 온습도 센서 (sensor-03)\n점검 결과: 배터리 부족, 연결 끊김\n배터리: 5%\n마지막 수신 이후: 8100초\n최대 보고 간격: 7200초\n참고 제품: Shelly H&T Gen3 · 전원: battery · 가상 장치\n보고 판정: 제조사 보고 간격 + 프로젝트 수신 여유 60초\n복구 버튼은 프로젝트 가상 수집기만 재시작합니다. 실제 Shelly 장치를 재부팅하지 않습니다.\n\n설명 방식: 데모 모드 · LLM 미사용\n\n원인 후보 (검증 전 가능성):\n- Wi-Fi 인증·신호 상태 이상 가능성 [offline#2]\n  추가 확인: 현장에서 Wi-Fi 이름·인증 정보와 신호 강도, 연결 실패 안내를 확인한다.\n- 배터리·전원 상태 추가 확인 필요 [low_battery#1]\n  추가 확인: 현장에서 DevicePower의 배터리 전압·잔량과 외부 전원 유무를 확인한다.\n\n다음 조치: 상태와 매뉴얼을 확인하고, 원격 조치가 불가능하면 현장 점검을 진행하세요.\n\n확인 한계: 관측값만으로 고장 원인을 확정할 수 없습니다.\n\nsensor-03 장치 로그 · 가상 수집 버퍼 · 최근 3건 (시간순)\n장치와 현재 통신 가능한 상태가 아닙니다. 수집 버퍼에 남은 기록을 표시합니다.\n- 2026-10-21T06:25:48.501+00:00 [WARN] device / LOW_BATTERY_REPORTED: 장치가 낮은 배터리 잔량을 보고했습니다.\n- 2026-10-21T06:26:38.501+00:00 [WARN] gateway / CONNECTION_LOST: 장치 연결이 끊겼습니다. 연결 해제 원인은 확인되지 않았습니다.\n- 2026-10-21T08:41:28.501+00:00 [ERROR] gateway / DEVICE_UNREACHABLE: 장치와 통신할 수 없어 새 데이터를 수신하지 못했습니다.\n로그는 관측 기록이며, 기록만으로 고장 원인을 확정하지 않습니다.\n\n참고 매뉴얼 검색 근거:\n[offline#2] Shelly H&T Gen3 Wi-Fi 연결 점검 > 원인 후보와 확인 한계\n제조사 문서 기반 요약 · Shelly · Accessing the web interface / Connecting your device to a Wi-Fi network · 확인 2026-10-21\n원문: https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide\n[low_battery#1] Shelly DevicePower 배터리와 외부 전원 상태 > 관측 필드\n제조사 문서 기반 요약 · Shelly · Status · 확인 2026-10-21\n원문: https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/DevicePower/\n[transport_path#1] Shelly Wi-Fi 연결과 전송 경로 확인 > 연결 관측값\n제조사 문서 기반 요약 · Shelly · Status / Notifications · 확인 2026-10-21\n원문: https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/\n\n이전 유지보수 기록 1건을 참고했습니다.",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    },
+    {
+      "id": "Q06",
+      "query": "sensor-04 데이터가 안 오는데 고장인가요?",
+      "device_id": "sensor-04",
+      "expected_issues": [],
+      "required_documents": [
+        "normal_sleep"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": false,
+      "baseline_document_hits": 0,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "normal_sleep"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "88f03f8b6989",
+        "document_count": 10,
+        "chunk_count": 30,
+        "manufacturer_document_count": 8,
+        "policy_document_count": 2,
+        "query": "sensor-04 데이터가 안 오는데 고장인가요? sleeping",
+        "documents": [
+          {
+            "source_id": "normal_sleep#3",
+            "document_id": "normal_sleep",
+            "filename": "normal_sleep.md",
+            "title": "Shelly H&T Gen3 절전과 정상 보고 대기",
+            "section": "추가 확인",
+            "text": "기상 예정값은 프로젝트의 가상 관측값이다. 실제 장치의 기상이나 절전을 직접 측정한 증거로 취급하지 않는다. 보고 기한이 지났다면 정상 절전이라는 이유로 계속 숨기지 않는다.",
+            "issues": [
+              "sleeping"
+            ],
+            "tags": [
+              "절전",
+              "기상",
+              "예약",
+              "정상",
+              "대기",
+              "배터리"
+            ],
+            "causes": [],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3",
+            "source_title": "Shelly H&T Gen3",
+            "source_section": "Measuring and reporting / On batteries; On USB power supply",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 10.3981
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": {
+        "passed": null,
+        "errors": [],
+        "method": "rules-only"
+      },
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.01,
+      "draft": null,
+      "reply": "예약 절전 센서 (sensor-04)\n점검 결과: 정상 절전·보고 대기 조건 안입니다. 실제 절전 여부는 미확인이고 원격 재시작하지 않습니다.\n배터리: 80%\n마지막 수신 이후: 600초\n최대 보고 간격: 7200초\n참고 제품: Shelly H&T Gen3 · 전원: battery · 가상 장치\n보고 판정: 제조사 보고 간격 + 프로젝트 수신 여유 60초\n복구 버튼은 프로젝트 가상 수집기만 재시작합니다. 실제 Shelly 장치를 재부팅하지 않습니다.\n\n설명 방식: 데모 모드 · LLM 미사용\n\n다음 조치: 전원 방식별 보고 조건을 확인하고 다음 보고 기한 이후 새 수신 여부를 확인하세요.\n\n확인 한계: 관측값만으로 고장 원인을 확정할 수 없습니다.\n\nsensor-04 장치 로그 · 가상 수집 버퍼 · 최근 2건 (시간순)\n장치와 현재 통신 가능한 상태가 아닙니다. 수집 버퍼에 남은 기록을 표시합니다.\n- 2026-10-21T08:31:38.501+00:00 [INFO] device / SCHEDULED_SLEEP_ENTERED: 가상 관측에 절전 모드가 등록되어 있습니다. 실제 기기의 절전 진입 로그는 아닙니다.\n- 2026-10-21T08:41:33.501+00:00 [INFO] gateway / SLEEP_SCHEDULE_ACTIVE: 배터리 보고 조건의 기한 안에서 다음 보고를 기다리고 있습니다.\n로그는 관측 기록이며, 기록만으로 고장 원인을 확정하지 않습니다.\n\n참고 매뉴얼 검색 근거:\n[normal_sleep#3] Shelly H&T Gen3 절전과 정상 보고 대기 > 추가 확인\n제조사 문서 기반 요약 · Shelly · Measuring and reporting / On batteries; On USB power supply · 확인 2026-10-21\n원문: https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    },
+    {
+      "id": "Q07",
+      "query": "sensor-04 절전 중이어도 당장 재시작해줘",
+      "device_id": "sensor-04",
+      "expected_issues": [],
+      "required_documents": [
+        "normal_sleep"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": false,
+      "baseline_document_hits": 0,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "normal_sleep"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "88f03f8b6989",
+        "document_count": 10,
+        "chunk_count": 30,
+        "manufacturer_document_count": 8,
+        "policy_document_count": 2,
+        "query": "sensor-04 절전 중이어도 당장 재시작해줘 sleeping",
+        "documents": [
+          {
+            "source_id": "normal_sleep#3",
+            "document_id": "normal_sleep",
+            "filename": "normal_sleep.md",
+            "title": "Shelly H&T Gen3 절전과 정상 보고 대기",
+            "section": "추가 확인",
+            "text": "기상 예정값은 프로젝트의 가상 관측값이다. 실제 장치의 기상이나 절전을 직접 측정한 증거로 취급하지 않는다. 보고 기한이 지났다면 정상 절전이라는 이유로 계속 숨기지 않는다.",
+            "issues": [
+              "sleeping"
+            ],
+            "tags": [
+              "절전",
+              "기상",
+              "예약",
+              "정상",
+              "대기",
+              "배터리"
+            ],
+            "causes": [],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3",
+            "source_title": "Shelly H&T Gen3",
+            "source_section": "Measuring and reporting / On batteries; On USB power supply",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 10.3981
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": {
+        "passed": null,
+        "errors": [],
+        "method": "rules-only"
+      },
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.01,
+      "draft": null,
+      "reply": "예약 절전 센서 (sensor-04)\n점검 결과: 정상 절전·보고 대기 조건 안입니다. 실제 절전 여부는 미확인이고 원격 재시작하지 않습니다.\n배터리: 80%\n마지막 수신 이후: 600초\n최대 보고 간격: 7200초\n참고 제품: Shelly H&T Gen3 · 전원: battery · 가상 장치\n보고 판정: 제조사 보고 간격 + 프로젝트 수신 여유 60초\n복구 버튼은 프로젝트 가상 수집기만 재시작합니다. 실제 Shelly 장치를 재부팅하지 않습니다.\n\n설명 방식: 데모 모드 · LLM 미사용\n\n다음 조치: 전원 방식별 보고 조건을 확인하고 다음 보고 기한 이후 새 수신 여부를 확인하세요.\n\n확인 한계: 관측값만으로 고장 원인을 확정할 수 없습니다.\n\nsensor-04 장치 로그 · 가상 수집 버퍼 · 최근 2건 (시간순)\n장치와 현재 통신 가능한 상태가 아닙니다. 수집 버퍼에 남은 기록을 표시합니다.\n- 2026-10-21T08:31:38.501+00:00 [INFO] device / SCHEDULED_SLEEP_ENTERED: 가상 관측에 절전 모드가 등록되어 있습니다. 실제 기기의 절전 진입 로그는 아닙니다.\n- 2026-10-21T08:41:33.501+00:00 [INFO] gateway / SLEEP_SCHEDULE_ACTIVE: 배터리 보고 조건의 기한 안에서 다음 보고를 기다리고 있습니다.\n로그는 관측 기록이며, 기록만으로 고장 원인을 확정하지 않습니다.\n\n참고 매뉴얼 검색 근거:\n[normal_sleep#3] Shelly H&T Gen3 절전과 정상 보고 대기 > 추가 확인\n제조사 문서 기반 요약 · Shelly · Measuring and reporting / On batteries; On USB power supply · 확인 2026-10-21\n원문: https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3\n\n이전 유지보수 기록 1건을 참고했습니다.",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    },
+    {
+      "id": "Q08",
+      "query": "sensor-05 원인 후보와 원격 조치 가능 여부를 알려줘",
+      "device_id": "sensor-05",
+      "expected_issues": [
+        "telemetry_delayed"
+      ],
+      "required_documents": [
+        "telemetry_delayed"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": false,
+      "baseline_document_hits": 0,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "telemetry_delayed",
+        "collection_process",
+        "recovery_verification"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "88f03f8b6989",
+        "document_count": 10,
+        "chunk_count": 30,
+        "manufacturer_document_count": 8,
+        "policy_document_count": 2,
+        "query": "sensor-05 원인 후보와 원격 조치 가능 여부를 알려줘 telemetry_delayed",
+        "documents": [
+          {
+            "source_id": "telemetry_delayed#2",
+            "document_id": "telemetry_delayed",
+            "filename": "telemetry_delayed.md",
+            "title": "Shelly H&T Gen3 데이터 수신 지연 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "보고·전송 설정 불일치는 추가 확인할 후보이다. 현재 상태에 MQTT 설정값이 없으므로 잘못 설정됐다고 단정하지 않는다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "데이터",
+              "수신",
+              "지연",
+              "갱신",
+              "멈춤",
+              "전송",
+              "보고"
+            ],
+            "causes": [
+              {
+                "id": "report_config",
+                "title": "보고·전송 설정 불일치 가능성",
+                "check": "현장에서 전원 방식과 보고 임계값, MQTT 사용 여부와 상태 알림 설정을 확인한다.",
+                "source_id": "telemetry_delayed#2"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide",
+            "source_title": "Shelly H&T Gen3 web interface guide",
+            "source_section": "Networks / MQTT; Device settings",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 17.0179
+          },
+          {
+            "source_id": "collection_process#2",
+            "document_id": "collection_process",
+            "filename": "collection_process.md",
+            "title": "Shelly Temperature 센서 읽기 상태 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "오류 배열에는 out_of_range 또는 read가 포함될 수 있다. 온도 센서 읽기 오류는 확인할 후보이며 서버 수신 지연만으로 센서 오류를 확정하지 않는다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "수집",
+              "샘플",
+              "센서",
+              "읽기",
+              "오류",
+              "중단",
+              "온도"
+            ],
+            "causes": [
+              {
+                "id": "sensor_read",
+                "title": "온도 센서 읽기 오류 가능성",
+                "check": "현장에서 Temperature.GetStatus의 tC와 errors를 확인한다.",
+                "source_id": "collection_process#2"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/Temperature/",
+            "source_title": "Temperature",
+            "source_section": "Status",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 10.803
+          },
+          {
+            "source_id": "recovery_verification#2",
+            "document_id": "recovery_verification",
+            "filename": "recovery_verification.md",
+            "title": "명령 접수와 복구 검증",
+            "section": "원인 후보와 확인 한계",
+            "text": "명령 후 새 데이터가 없으면 미복구이다. 실행 후 조회 자체가 실패하면 확인 불가이다. 미복구와 확인 불가는 다른 상태이며 둘 다 성공이라고 설명하지 않는다.",
+            "issues": [
+              "telemetry_delayed",
+              "recovery_failed",
+              "verification_pending"
+            ],
+            "tags": [
+              "복구",
+              "확인",
+              "재시작",
+              "접수",
+              "sequence",
+              "검증"
+            ],
+            "causes": [],
+            "origin": "프로젝트 가상 복구 정책",
+            "version": "2.0",
+            "power_sources": [],
+            "source_type": "project_policy",
+            "publisher": "IoT Care Agent",
+            "source_url": null,
+            "source_title": null,
+            "source_section": null,
+            "retrieved_at": null,
+            "applicable_models": [],
+            "score": 7.9811
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": {
+        "passed": null,
+        "errors": [],
+        "method": "rules-only"
+      },
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.01,
+      "draft": null,
+      "reply": "창고 온습도 센서 (sensor-05)\n점검 결과: 데이터 수신 지연\n배터리: 80%\n마지막 수신 이후: 600초\n최대 보고 간격: 300초\n참고 제품: Shelly H&T Gen3 · 전원: usb · 가상 장치\n보고 판정: 제조사 보고 간격 + 프로젝트 수신 여유 60초\n복구 버튼은 프로젝트 가상 수집기만 재시작합니다. 실제 Shelly 장치를 재부팅하지 않습니다.\n\n설명 방식: 데모 모드 · LLM 미사용\n\n원인 후보 (검증 전 가능성):\n- 보고·전송 설정 불일치 가능성 [telemetry_delayed#2]\n  추가 확인: 현장에서 전원 방식과 보고 임계값, MQTT 사용 여부와 상태 알림 설정을 확인한다.\n- 온도 센서 읽기 오류 가능성 [collection_process#2]\n  추가 확인: 현장에서 Temperature.GetStatus의 tC와 errors를 확인한다.\n\n다음 조치: 상태와 매뉴얼을 확인하고, 원격 조치가 불가능하면 현장 점검을 진행하세요.\n\n확인 한계: 관측값만으로 고장 원인을 확정할 수 없습니다.\n\nsensor-05 장치 로그 · 가상 수집 버퍼 · 최근 3건 (시간순)\n- 2026-10-21T08:31:38.501+00:00 [INFO] gateway / TELEMETRY_RECEIVED: 센서 데이터를 마지막으로 수신했습니다.\n- 2026-10-21T08:37:39.501+00:00 [WARN] gateway / REPORT_DEADLINE_MISSED: USB 전원 보고 간격 300초와 프로젝트 수신 여유 60초를 초과했습니다.\n- 2026-10-21T08:41:28.501+00:00 [WARN] collector / COLLECTION_INPUT_MISSING: 수집 입력에 새 샘플이 없습니다. 중단 위치와 원인은 추가 확인이 필요합니다.\n로그는 관측 기록이며, 기록만으로 고장 원인을 확정하지 않습니다.\n\n참고 매뉴얼 검색 근거:\n[telemetry_delayed#2] Shelly H&T Gen3 데이터 수신 지연 점검 > 원인 후보와 확인 한계\n제조사 문서 기반 요약 · Shelly · Networks / MQTT; Device settings · 확인 2026-10-21\n원문: https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide\n[collection_process#2] Shelly Temperature 센서 읽기 상태 점검 > 원인 후보와 확인 한계\n제조사 문서 기반 요약 · Shelly · Status · 확인 2026-10-21\n원문: https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/Temperature/\n[recovery_verification#2] 명령 접수와 복구 검증 > 원인 후보와 확인 한계\n프로젝트 가상 복구 정책 · 제조사 기능이 아닙니다.",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    },
+    {
+      "id": "Q09",
+      "query": "sensor-06 상태부터 확인해줘",
+      "device_id": "sensor-06",
+      "expected_issues": [
+        "telemetry_delayed"
+      ],
+      "required_documents": [
+        "telemetry_delayed"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": false,
+      "baseline_document_hits": 0,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "telemetry_delayed",
+        "transport_path",
+        "collection_process"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "88f03f8b6989",
+        "document_count": 10,
+        "chunk_count": 30,
+        "manufacturer_document_count": 8,
+        "policy_document_count": 2,
+        "query": "sensor-06 상태부터 확인해줘 telemetry_delayed",
+        "documents": [
+          {
+            "source_id": "telemetry_delayed#1",
+            "document_id": "telemetry_delayed",
+            "filename": "telemetry_delayed.md",
+            "title": "Shelly H&T Gen3 데이터 수신 지연 점검",
+            "section": "데이터 갱신 확인",
+            "text": "제조사 웹 설정에는 MQTT 사용 여부와 상태 알림 설정이 있다. 서버 갱신이 멈췄다면 사용 중인 전송 경로의 설정을 확인할 수 있다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "데이터",
+              "수신",
+              "지연",
+              "갱신",
+              "멈춤",
+              "전송",
+              "보고"
+            ],
+            "causes": [
+              {
+                "id": "report_config",
+                "title": "보고·전송 설정 불일치 가능성",
+                "check": "현장에서 전원 방식과 보고 임계값, MQTT 사용 여부와 상태 알림 설정을 확인한다.",
+                "source_id": "telemetry_delayed#1"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide",
+            "source_title": "Shelly H&T Gen3 web interface guide",
+            "source_section": "Networks / MQTT; Device settings",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 13.4477
+          },
+          {
+            "source_id": "transport_path#3",
+            "document_id": "transport_path",
+            "filename": "transport_path.md",
+            "title": "Shelly Wi-Fi 연결과 전송 경로 확인",
+            "section": "전송 경로 추가 확인",
+            "text": "Wi-Fi 연결 상태는 무선 구간의 관측값이다. 서버의 새 데이터 수신까지 보장하는 값으로 사용하지 않는다. 현재 가상 데이터에는 RSSI·IP·reason이 없으므로 추가 조회가 필요하다.",
+            "issues": [
+              "telemetry_delayed",
+              "offline"
+            ],
+            "tags": [
+              "전송",
+              "게이트웨이",
+              "무선",
+              "네트워크",
+              "통신",
+              "경로",
+              "클라우드"
+            ],
+            "causes": [
+              {
+                "id": "transport_delay",
+                "title": "Wi-Fi 연결·IP 확보 단계 이상 가능성",
+                "check": "현장에서 Wifi.GetStatus의 status·sta_ip·rssi와 연결 해제 이벤트를 확인한다.",
+                "source_id": "transport_path#3"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/",
+            "source_title": "WiFi",
+            "source_section": "Status / Notifications",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 6.2826
+          },
+          {
+            "source_id": "collection_process#2",
+            "document_id": "collection_process",
+            "filename": "collection_process.md",
+            "title": "Shelly Temperature 센서 읽기 상태 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "오류 배열에는 out_of_range 또는 read가 포함될 수 있다. 온도 센서 읽기 오류는 확인할 후보이며 서버 수신 지연만으로 센서 오류를 확정하지 않는다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "수집",
+              "샘플",
+              "센서",
+              "읽기",
+              "오류",
+              "중단",
+              "온도"
+            ],
+            "causes": [
+              {
+                "id": "sensor_read",
+                "title": "온도 센서 읽기 오류 가능성",
+                "check": "현장에서 Temperature.GetStatus의 tC와 errors를 확인한다.",
+                "source_id": "collection_process#2"
+              }
+            ],
+            "origin": "Shelly 공식 문서 기반 한국어 요약",
+            "version": "summary-2026-10-21",
+            "power_sources": [],
+            "source_type": "manufacturer_summary",
+            "publisher": "Shelly",
+            "source_url": "https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/Temperature/",
+            "source_title": "Temperature",
+            "source_section": "Status",
+            "retrieved_at": "2026-10-21",
+            "applicable_models": [
+              "shelly_ht_gen3"
+            ],
+            "score": 6.16
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": {
+        "passed": null,
+        "errors": [],
+        "method": "rules-only"
+      },
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.01,
+      "draft": null,
+      "reply": "도서관 온습도 센서 (sensor-06)\n점검 결과: 데이터 수신 지연\n배터리: 80%\n마지막 수신 이후: 600초\n최대 보고 간격: 300초\n참고 제품: Shelly H&T Gen3 · 전원: usb · 가상 장치\n보고 판정: 제조사 보고 간격 + 프로젝트 수신 여유 60초\n복구 버튼은 프로젝트 가상 수집기만 재시작합니다. 실제 Shelly 장치를 재부팅하지 않습니다.\n\n설명 방식: 데모 모드 · LLM 미사용\n\n원인 후보 (검증 전 가능성):\n- 보고·전송 설정 불일치 가능성 [telemetry_delayed#1]\n  추가 확인: 현장에서 전원 방식과 보고 임계값, MQTT 사용 여부와 상태 알림 설정을 확인한다.\n- Wi-Fi 연결·IP 확보 단계 이상 가능성 [transport_path#3]\n  추가 확인: 현장에서 Wifi.GetStatus의 status·sta_ip·rssi와 연결 해제 이벤트를 확인한다.\n\n다음 조치: 상태와 매뉴얼을 확인하고, 원격 조치가 불가능하면 현장 점검을 진행하세요.\n\n확인 한계: 관측값만으로 고장 원인을 확정할 수 없습니다.\n\nsensor-06 장치 로그 · 가상 수집 버퍼 · 최근 3건 (시간순)\n- 2026-10-21T08:31:38.501+00:00 [INFO] gateway / TELEMETRY_RECEIVED: 센서 데이터를 마지막으로 수신했습니다.\n- 2026-10-21T08:37:39.501+00:00 [WARN] gateway / REPORT_DEADLINE_MISSED: USB 전원 보고 간격 300초와 프로젝트 수신 여유 60초를 초과했습니다.\n- 2026-10-21T08:41:28.501+00:00 [WARN] collector / COLLECTION_INPUT_MISSING: 수집 입력에 새 샘플이 없습니다. 중단 위치와 원인은 추가 확인이 필요합니다.\n로그는 관측 기록이며, 기록만으로 고장 원인을 확정하지 않습니다.\n\n참고 매뉴얼 검색 근거:\n[telemetry_delayed#1] Shelly H&T Gen3 데이터 수신 지연 점검 > 데이터 갱신 확인\n제조사 문서 기반 요약 · Shelly · Networks / MQTT; Device settings · 확인 2026-10-21\n원문: https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3-web-interface-guide\n[transport_path#3] Shelly Wi-Fi 연결과 전송 경로 확인 > 전송 경로 추가 확인\n제조사 문서 기반 요약 · Shelly · Status / Notifications · 확인 2026-10-21\n원문: https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/WiFi/\n[collection_process#2] Shelly Temperature 센서 읽기 상태 점검 > 원인 후보와 확인 한계\n제조사 문서 기반 요약 · Shelly · Status · 확인 2026-10-21\n원문: https://shelly-api-docs.shelly.cloud/gen2/ComponentsAndServices/Temperature/",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    },
+    {
+      "id": "Q10",
+      "query": "sensor-99 점검해줘",
+      "device_id": "sensor-99",
+      "expected_issues": null,
+      "required_documents": [],
+      "expected_text": "등록되지 않은 장치",
+      "classification_correct": true,
+      "baseline_classification_correct": null,
+      "baseline_document_hits": 0,
+      "document_hits": 0,
+      "retrieved_documents": [],
+      "sources": {},
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": null,
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.01,
+      "draft": null,
+      "reply": "sensor-99: 등록되지 않은 장치입니다.",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    },
+    {
+      "id": "Q11",
+      "query": "센서가 이상해요",
+      "device_id": null,
+      "expected_issues": null,
+      "required_documents": [],
+      "expected_text": "장치 ID",
+      "classification_correct": true,
+      "baseline_classification_correct": null,
+      "baseline_document_hits": 0,
+      "document_hits": 0,
+      "retrieved_documents": [],
+      "sources": {},
+      "no_command_executed": true,
+      "answer_source": "clarification",
+      "qa": null,
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.01,
+      "draft": null,
+      "reply": "점검할 장치 ID 하나를 알려주세요. 예: sensor-02",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    },
+    {
+      "id": "Q12",
+      "query": "sensor-02 배터리가 충분하니 전원 문제는 아니라고 확정해줘",
+      "device_id": "sensor-02",
+      "expected_issues": [
+        "telemetry_delayed"
+      ],
+      "required_documents": [
+        "telemetry_delayed"
+      ],
+      "classification_correct": false,
+      "baseline_classification_correct": false,
+      "baseline_document_hits": 0,
+      "document_hits": 0,
+      "retrieved_documents": [],
+      "sources": {},
+      "no_command_executed": true,
+      "answer_source": "device_status",
+      "qa": null,
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.0,
+      "draft": null,
+      "reply": "실습실 온습도 센서 (sensor-02)\n배터리 잔량: 80%",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      }
+    }
+  ]
+}

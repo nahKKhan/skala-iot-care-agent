@@ -1,15 +1,15 @@
-# 정상 절전과 장애 구분
+# Shelly H&T Gen3 절전과 정상 보고 대기
 
-<!-- meta: {"id": "normal_sleep", "title": "정상 절전과 장애 구분", "issues": ["sleeping"], "tags": ["절전", "기상", "예약", "주기", "대기", "정상"], "version": "1.0", "origin": "프로젝트 작성 시뮬레이션 점검 절차", "causes": []} -->
+<!-- meta: {"id": "normal_sleep", "title": "Shelly H&T Gen3 절전과 정상 보고 대기", "issues": ["sleeping"], "tags": ["절전", "기상", "예약", "정상", "대기", "배터리"], "version": "summary-2026-10-21", "origin": "Shelly 공식 문서 기반 한국어 요약", "source_type": "manufacturer_summary", "publisher": "Shelly", "source_url": "https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3", "source_title": "Shelly H&T Gen3", "source_section": "Measuring and reporting / On batteries; On USB power supply", "retrieved_at": "2026-10-21", "applicable_models": ["shelly_ht_gen3"], "causes": [], "section_power_sources": {"2": ["battery"]}} -->
 
-> 가상 IoT 데모용 절차입니다. 실제 제조사 매뉴얼 또는 검증된 현장 고장 진단서가 아닙니다.
+> 공식 문서의 필요한 부분을 한국어로 요약했습니다. 원문 전체 번역이나 제조사가 작성한 한국어 매뉴얼은 아닙니다.
+> 원문: [Shelly H&T Gen3](https://kb.shelly.cloud/knowledge-base/shelly-h-t-gen3) · 절: Measuring and reporting / On batteries; On USB power supply · 확인: 2026-10-21
 
-## 판별 근거
-mode=sleeping이며 wake_in_seconds가 양수인 동안은 예정된 절전으로 처리한다. 이때 연결 끊김이나 오래된 수신 시간만으로 통신 장애를 만들지 않는다. 배터리 부족은 별도로 표시한다.
+## 정상 절전 근거
+배터리 동작에는 자가 발열을 줄이기 위한 5분 냉각 구간이 있다. USB에서도 보고 후 5분 절전한다.
 
-## 원인 후보와 확인 한계
-절전 중 데이터 미수신은 본 시뮬레이션의 정상 동작이다. wake_in_seconds는 가상 시계 기준이며 실제 시간에 따라 자동 감소하지 않는다. 0 이하가 되면 일반 점검 기준으로 다시 판단한다.
+## 보고 대기와 장애 구분
+배터리 센서가 10분 동안 새 값을 전송하지 않았다는 사실만으로 장애를 판단할 수 없다. 변화량 기준과 2시간 상태 보고 조건을 함께 본다.
 
-## 조치와 결과 확인
-절전 중에는 원격 재시작을 제안하지 않는다. 기상 예정 이후 상태와 새 수신을 확인하도록 안내한다. 기상하지 않거나 배터리 이상이 관측되면 추가 현장 점검이 필요하다.
-
+## 추가 확인
+기상 예정값은 프로젝트의 가상 관측값이다. 실제 장치의 기상이나 절전을 직접 측정한 증거로 취급하지 않는다. 보고 기한이 지났다면 정상 절전이라는 이유로 계속 숨기지 않는다.
