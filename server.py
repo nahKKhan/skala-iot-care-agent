@@ -163,6 +163,28 @@ async def version():
     return {"supervisor_version": app.state.deps.version}
 
 
+def _recovery_offer(result: dict) -> dict | None:
+    """모델의 답변 문장이 아닌 조회한 상태로 복구 버튼 표시 여부를 결정한다."""
+    device_result = result.get("result") or {}
+    device = device_result.get("data") or {}
+    issues = (result.get("assessment") or {}).get("issues", [])
+    if not (
+        device_result.get("ok")
+        and result.get("device_id")
+        and device.get("connected") is True
+        and device.get("battery_pct", 0) > 20
+        and "telemetry_delayed" in issues
+        and "restart_collection" in device.get("supported_actions", [])
+    ):
+        return None
+    return {
+        "device_id": result["device_id"],
+        "device_name": device.get("name", result["device_id"]),
+        "action": "restart_collection",
+        "simulated": True,
+    }
+
+
 def _metadata(result: dict, run_id: str | None) -> dict:
     return {
         "route": result.get("route"),
@@ -200,6 +222,7 @@ async def _handle_chat(message: str, thread_id: str) -> tuple[dict, str | None]:
 async def chat(req: ChatRequest):
     result, run_id = await _handle_chat(req.message, req.thread_id)
     return {"reply": result["final"], "events": result.get("events", []),
+            "recovery": _recovery_offer(result),
             "metadata": _metadata(result, run_id)}
 
 
@@ -222,6 +245,7 @@ async def chat_stream(message: str, thread_id: str = "default"):
         else:
             seen = 0
             final = ""
+            inspection = {}  # SSE에서도 조회 결과를 모아 구조화된 복구 대상을 전달
             last_prompt = None   # finalize까지 살아남은 최종 write/chat 호출의 실제 프롬프트
             # stream_mode를 리스트로 주면 (mode, payload) 튜플이 나온다 — "updates"는
             # 노드가 끝날 때마다의 상태 델타, "custom"은 write_node/chat_answer_node가
@@ -233,6 +257,11 @@ async def chat_stream(message: str, thread_id: str = "default"):
                     yield f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
                     continue
                 for node_name, delta in payload.items():
+                    if not isinstance(delta, dict):
+                        continue
+                    for key in ("device_id", "result", "assessment"):
+                        if key in delta:
+                            inspection[key] = delta[key]
                     for ev in (delta.get("events") or [])[seen:]:
                         ev = {**ev, "node": node_name}
                         yield f"data: {json.dumps(ev, ensure_ascii=False)}\n\n"
@@ -242,7 +271,7 @@ async def chat_stream(message: str, thread_id: str = "default"):
                         final = delta["final"]
                     if delta.get("last_prompt"):
                         last_prompt = delta["last_prompt"]
-            yield f"data: {json.dumps({'type': 'FinalAnswer', 'reply': final, 'prompt': last_prompt}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'type': 'FinalAnswer', 'reply': final, 'prompt': last_prompt, 'recovery': _recovery_offer(inspection)}, ensure_ascii=False)}\n\n"
             deps.session_store.append(thread_id, "user", message)
             deps.session_store.append(thread_id, "assistant", final)
         yield "data: [DONE]\n\n"
