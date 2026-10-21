@@ -24,7 +24,7 @@ from pydantic import BaseModel
 
 from agent.deps import SupervisorDeps
 from agent.fake_llm import FastLLM, QualityLLM
-from agent.graph import build_graph
+from agent.iot_graph import build_graph
 from agent.mcp_client import MCPClient
 from agent.session_store import SqliteSessionStore
 from agent.supervisor_v1 import run_v1
