@@ -45,7 +45,7 @@ function setup(recover) {
     streams.at(-1).emit('[DONE]');
     return state.log.value.filter(item => item.kind === 'agent').at(-1);
   }
-  return {state, calls, inspect};
+  return {state, calls, inspect, streams};
 }
 
 const posts = instance => instance.calls.filter(call => call.url === '/api/recover');
@@ -221,4 +221,22 @@ test('unknown recovery and reset do not show old observations as current', async
   assert.equal(ui.state.snapshot.value, null);
   assert.equal(ui.state.activeResult.value, null);
   assert.equal(ui.state.deviceState('sensor-02'), '재점검 필요');
+});
+
+
+test('structured log results appear for the correct device without recovery controls', () => {
+  const ui = setup(async () => response(successful));
+  ui.state.input.value = 'sensor-03 로그 보여줘';
+  ui.state.onSubmit();
+  const deviceLogs = {ok: true, device_id: 'sensor-03', simulated: true,
+    logs: [{id: 'entry-1', code: 'DEVICE_UNREACHABLE', level: 'ERROR', message: '통신 불가'}]};
+  ui.streams.at(-1).emit({type: 'FinalAnswer', reply: '장치 로그', metadata: {route: 'logs'}, device_logs: deviceLogs});
+  ui.streams.at(-1).emit('[DONE]');
+  // 선택 목록이 아직 비동기로 도착하지 않았더라도 서버 대상과 일치하는 장치만 표시한다.
+  ui.state.chooseDevice('sensor-03');
+  assert.equal(ui.state.activeResult.value.deviceLogs.logs[0].code, 'DEVICE_UNREACHABLE');
+  assert.equal(ui.state.activeResult.value.recovery, undefined);
+  assert.equal(posts(ui).length, 0);
+  ui.state.chooseDevice('sensor-02');
+  assert.equal(ui.state.activeResult.value, null);
 });

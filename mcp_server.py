@@ -72,6 +72,12 @@ def get_device_status(device_id: str) -> dict:
 
 
 @mcp.tool()
+def get_device_logs(device_id: str, limit: int = 10, level: str | None = None) -> dict:
+    """가상 수집 버퍼의 최근 장치 로그를 시간순으로 조회한다. level은 INFO/WARN/ERROR 정확히 일치 필터이며 limit은 1~100이다. 오프라인에서도 기존 버퍼는 조회 가능하다."""
+    return SIMULATOR.get_logs(device_id, limit=limit, level=level)
+
+
+@mcp.tool()
 def restart_collection(device_id: str, request_id: str = "") -> dict:
     """허용된 가상 수집 모듈 재시작. 명령 접수와 데이터 복구는 구분한다."""
     return SIMULATOR.restart(device_id, request_id)

@@ -197,16 +197,18 @@
             <template v-for="item in log" :key="item.id">
               <div v-if="item.kind === 'user'" class="row user"><span class="message-role">나</span><div class="bubble">{{ item.text }}</div></div>
               <div v-else-if="item.kind === 'steps' && item.steps.length" class="steps" :class="{done:item.done}"><div v-for="(step,i) in item.steps" :key="i" class="step">{{ step }}</div></div>
-              <div v-else-if="item.kind === 'agent'" class="row agent"><span class="message-role">IoT Care</span><div class="bubble">{{ item.text }}</div><div class="bubble-actions"><button v-if="item.sources?.length || item.recovery" type="button" class="text-button" @click="viewResult(item)">근거·점검 결과 보기 →</button><span v-if="item.receivedAt" class="message-footnote">{{ formatTime(item.receivedAt) }}</span></div></div>
+              <div v-else-if="item.kind === 'agent'" class="row agent"><span class="message-role">IoT Care</span><div class="bubble">{{ item.text }}</div><div class="bubble-actions"><button v-if="item.sources?.length || item.recovery || item.deviceLogs" type="button" class="text-button" @click="viewResult(item)">근거·점검 결과 보기 →</button><span v-if="item.receivedAt" class="message-footnote">{{ formatTime(item.receivedAt) }}</span></div></div>
               <details v-else-if="item.kind === 'prompt'" class="prompt-box"><summary>요청에 사용한 근거 보기</summary><pre>{{ item.text }}</pre></details>
             </template>
             <div v-if="sending" class="loading-line" role="status"><span class="spinner" aria-hidden="true"></span>{{ streamStatus }}</div>
           </div>
-          <div class="chat-bottom"><div class="quick-actions"><button type="button" @click="sendPrompt(selectedDevice + '가 뭐더라?')" :disabled="sending || recovering !== null">장치 소개</button><button type="button" @click="sendPrompt(selectedDevice + ' 배터리 얼마나 남았어?')" :disabled="sending || recovering !== null">배터리 조회</button><button type="button" @click="sendPrompt(selectedDevice + ' 점검 기록 보여줘')" :disabled="sending || recovering !== null">점검 이력</button><button type="button" @click="sendPrompt('정상 절전과 수신 지연은 어떻게 달라?')" :disabled="sending || recovering !== null">매뉴얼 질문</button></div><form class="composer" @submit.prevent="onSubmit"><input v-model="input" autocomplete="off" aria-label="장치에 대해 질문하기" placeholder="예: sensor-02를 점검해줘" :disabled="sending || recovering !== null"><button type="submit" class="primary" :disabled="sending || recovering !== null || !input.trim()">보내기</button></form><p class="chat-hint">가상 복구는 점검 결과의 실행 버튼으로만 요청합니다.</p></div>
+          <div class="chat-bottom"><div class="quick-actions"><button type="button" @click="sendPrompt(selectedDevice + '가 뭐더라?')" :disabled="sending || recovering !== null">장치 소개</button><button type="button" @click="sendPrompt(selectedDevice + ' 배터리 얼마나 남았어?')" :disabled="sending || recovering !== null">배터리 조회</button><button type="button" @click="sendPrompt(selectedDevice + ' 로그 보여줘')" :disabled="sending || recovering !== null">장치 로그</button><button type="button" @click="sendPrompt(selectedDevice + ' 점검 기록 보여줘')" :disabled="sending || recovering !== null">점검 이력</button><button type="button" @click="sendPrompt('정상 절전과 수신 지연은 어떻게 달라?')" :disabled="sending || recovering !== null">매뉴얼 질문</button></div><form class="composer" @submit.prevent="onSubmit"><input v-model="input" autocomplete="off" aria-label="장치에 대해 질문하기" placeholder="예: sensor-02를 점검해줘" :disabled="sending || recovering !== null"><button type="submit" class="primary" :disabled="sending || recovering !== null || !input.trim()">보내기</button></form><p class="chat-hint">가상 복구는 점검 결과의 실행 버튼으로만 요청합니다.</p></div>
         </section>
 
         <aside class="analysis-column" ref="analysisEl" aria-label="점검 결과와 근거">
           <section class="panel"><div class="panel-heading"><h2>최근 확인된 상태</h2><span class="badge" :class="snapshot ? statusTone(snapshot.status) : 'neutral'">{{ snapshot ? statusLabel(snapshot.status) : '점검 전' }}</span></div><div class="card-body"><div class="observation-top"><small>{{ selectedDevice }} · 기록된 관측값</small><small>{{ snapshot?.time ? formatTime(snapshot.time) : '관측 기록 없음' }}</small></div><dl class="facts"><div><dt>배터리</dt><dd>{{ snapshot?.data?.battery_pct ?? '—' }}<small v-if="snapshot?.data?.battery_pct != null"> %</small></dd></div><div><dt>연결</dt><dd>{{ snapshot?.data?.connected === true ? '연결됨' : snapshot?.data?.connected === false ? '끊김' : '—' }}</dd></div><div><dt>마지막 수신 이후</dt><dd>{{ snapshot?.data?.telemetry_age_seconds ?? '—' }}<small v-if="snapshot?.data?.telemetry_age_seconds != null"> 초</small></dd></div><div><dt>전송 주기</dt><dd>{{ snapshot?.data?.report_interval_seconds ?? '—' }}<small v-if="snapshot?.data?.report_interval_seconds != null"> 초</small></dd></div></dl><p v-if="!snapshot" class="card-note">점검 후 확인된 값만 표시합니다.</p><p v-else-if="!snapshot.data" class="card-note">조치 후 상태를 조회하지 못했습니다. 이전 값을 현재 상태로 표시하지 않습니다.</p></div></section>
+
+          <section class="panel"><div class="panel-heading"><h2>장치 로그</h2><button type="button" class="text-button" @click="sendPrompt(selectedDevice + ' 로그 보여줘')" :disabled="sending || recovering !== null">로그 조회</button></div><div class="card-body"><template v-if="activeResult?.deviceLogs?.ok"><p class="empty-card">가상 수집 버퍼 · {{ formatTime(activeResult.deviceLogs.fetched_at) }} 조회</p><details v-for="entry in activeResult.deviceLogs.logs" :key="entry.id" class="manual"><summary><span class="badge" :class="entry.level === 'ERROR' ? 'danger' : entry.level === 'WARN' ? 'warning' : 'neutral'">{{ entry.level }}</span> {{ entry.message }}</summary><p class="manual-section">{{ formatTime(entry.timestamp) }} · {{ entry.component }} · {{ entry.code }}</p><pre>{{ JSON.stringify(entry.details, null, 2) }}</pre></details><p v-if="!activeResult.deviceLogs.logs.length" class="card-note">조회 조건에 해당하는 로그가 없습니다.</p><p class="card-note">조회 시점의 기록입니다. 복구 후에는 로그를 다시 조회하세요.</p></template><p v-else class="empty-card">{{ activeResult?.deviceLogs?.error || '장치 점검 또는 로그 조회 시 최근 이벤트를 표시합니다.' }}</p></div></section>
 
           <section class="panel"><div class="panel-heading"><h2>원인 후보</h2><small>확정 전 가능성</small></div><div class="card-body"><div v-for="candidate in candidateList" :key="candidate.id" class="candidate"><strong>{{ candidate.title }}</strong><p>{{ candidate.check }}</p><span class="source-id">{{ candidate.sourceId }}</span></div><p v-if="!candidateList.length" class="empty-card">장치 점검에서 제시된 원인 후보가 여기에 표시됩니다. 정상 상태에는 후보가 없을 수 있습니다.</p><div class="quality-row"><span>출처·조치 검수</span><span class="badge" :class="qualityTone">{{ qualityLabel }}</span></div></div></section>
 
@@ -228,6 +230,7 @@
 const { createApp, ref, reactive, nextTick, computed } = Vue;
 
 const STEP_LABELS = {
+  DeviceLogsRetrieved: e => e.ok ? `장치 로그 조회 완료 · ${e.count}건` : '장치 로그를 가져오지 못했습니다. 확인된 상태와 매뉴얼로 계속합니다.',
   ManualSearchCompleted: e => `IoT 매뉴얼 검색 완료 · 관련 문단 ${e.count}개`,
   AnswerQualityChecked: e => e.passed ? '출처·원인 후보·조치 정책 검수 통과' : `답변 검수 미달 · ${e.attempt < 2 ? '한 번 재작성합니다' : '확인된 사실로 안내합니다'}`,
   DeviceExplanationStarted: () => '장치 상태·점검 결과·매뉴얼을 바탕으로 LLM이 설명을 작성하고 있습니다.',
@@ -336,7 +339,7 @@ createApp({
     function chooseDevice(id) {
       if (sending.value || recovering.value !== null) return;
       selectedDevice.value = id;
-      const result = [...log.value].reverse().find(item => item.kind === 'agent' && item.deviceId === id && (item.sources?.length || item.recovery || item.metadata?.route === 'diagnose'));
+      const result = [...log.value].reverse().find(item => item.kind === 'agent' && item.deviceId === id && (item.sources?.length || item.recovery || ['diagnose', 'logs'].includes(item.metadata?.route)));
       activeResultId.value = result?.id ?? null;
     }
     function viewResult(item) {
@@ -558,11 +561,12 @@ createApp({
           streamItem.text = e.reply;
           streamItem.sources = Array.isArray(e.sources) ? e.sources : [];
           streamItem.metadata = e.metadata || {};
+          streamItem.deviceLogs = e.device_logs || null;
           streamItem.deviceId = e.recovery?.device_id || requestDeviceId;
           streamItem.receivedAt = new Date().toISOString();
           stepsItem.done = true;
           streamStatus.value = '답변을 확인해 주세요.';
-          if (streamItem.sources.length || e.recovery || e.metadata?.route === 'diagnose') {
+          if (streamItem.sources.length || e.recovery || ['diagnose', 'logs'].includes(e.metadata?.route)) {
             activeResultId.value = streamItem.id;
             if (streamItem.deviceId) invalidatedDevices.value = invalidatedDevices.value.filter(id => id !== streamItem.deviceId);
           }

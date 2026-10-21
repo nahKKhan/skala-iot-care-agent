@@ -240,10 +240,10 @@ class OllamaQualityLLM(OllamaLLM):
 
     @traceable(run_type="llm", name="ollama_quality.explain_device")
     async def explain_device(self, *, query, device_id, data, assessment, runbook,
-                             documents=None, history=None, cause_candidates=None, feedback=None):
+                             documents=None, history=None, device_logs=None, cause_candidates=None, feedback=None):
         from .iot_llm import make_messages, request_explanation
         messages = make_messages(query, device_id, data, assessment, runbook,
-                                 documents=documents, history=history,
+                                 documents=documents, history=history, device_logs=device_logs,
                                  cause_candidates=cause_candidates, feedback=feedback)
         return await request_explanation(
             backend="ollama", model=self.model, messages=messages)

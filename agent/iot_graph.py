@@ -7,6 +7,7 @@ from .device_rules import assess_device
 from .iot_llm import ExplanationError, render_explanation
 from .answer_quality import check_answer
 from .query_router import route_query, HELP
+from .device_logs import format_device_logs
 
 
 class IoTState(TypedDict, total=False):
@@ -28,9 +29,16 @@ class IoTState(TypedDict, total=False):
     attempts: int
     feedback: str
     maintenance_id: str
+    device_logs: dict
 
 
 def build_graph(deps):
+    async def load_logs(device_id, limit):
+        try:
+            return await deps.mcp.call_tool("get_device_logs", {"device_id": device_id, "limit": limit})
+        except Exception:
+            return {"ok": False, "device_id": device_id, "error": "로그 수집 서버에서 기록을 가져오지 못했습니다."}
+
     async def inspect_device(state):
         route, ids = route_query(state["query"])
         if route == "clarify":
@@ -50,6 +58,10 @@ def build_graph(deps):
                 answer += "\n구체적인 설치 위치는 별도 등록되어 있지 않아 이름 이상의 위치를 확정할 수 없어요."
             answer += f"\n현재 상태는 '{ids[0]} 점검해줘', 배터리는 '{ids[0]} 배터리 얼마나 남았어?'라고 물어보세요."
             return {"route": route, "device_id": ids[0], "answer_source": "device_registry", "final": answer}
+        if route == "logs":
+            logs = await load_logs(ids[0], 10)
+            return {"route": route, "device_id": ids[0], "device_logs": logs,
+                    "answer_source": "device_logs", "final": format_device_logs(logs)}
         if route == "history":
             listing = await deps.mcp.call_tool("list_devices", {})
             if ids[0] not in {d["device_id"] for d in listing.get("devices", [])}:
@@ -90,6 +102,8 @@ def build_graph(deps):
     async def retrieve_evidence(state):
         if state.get("final"):
             return {}
+        logs = await load_logs(state["device_id"], 5)
+        get_stream_writer()({"type": "DeviceLogsRetrieved", "ok": logs.get("ok", False), "count": len(logs.get("logs", []))})
         assessment = state["assessment"]
         issues = assessment["issues"]
         key = "sleeping" if assessment.get("operating_state") == "sleeping" else "healthy"
@@ -113,7 +127,7 @@ def build_graph(deps):
         runbook = "\n\n".join(f"[{d['source_id']}] {d['title']} / {d['section']}\n{d['text']}" for d in documents)
         get_stream_writer()({"type": "ManualSearchCompleted", "count": len(documents)})
         return {"retrieval": retrieval, "history": history_result.get("records", []),
-                "candidates": candidates, "runbook": runbook}
+                "candidates": candidates, "runbook": runbook, "device_logs": logs}
 
     async def write_answer(state):
         if state.get("final"):
@@ -129,7 +143,7 @@ def build_graph(deps):
             draft, usage = await deps.quality_llm.explain_device(
                 query=state["query"], device_id=state["device_id"], data=state["result"]["data"],
                 assessment=state["assessment"], runbook=state["runbook"], documents=docs,
-                history=state["history"], cause_candidates=state["candidates"], feedback=state.get("feedback"))
+                history=state["history"], device_logs=state.get("device_logs"), cause_candidates=state["candidates"], feedback=state.get("feedback"))
         except ExplanationError as exc:
             return {"answer_source": "rules_fallback", "llm_error": str(exc), "attempts": attempts,
                     "qa": {"passed": False, "errors": [str(exc)], "method": "model-error"}, "draft": {}}
@@ -193,6 +207,7 @@ def build_graph(deps):
             elif issues:
                 lines.append("\n다음 조치: 상태와 매뉴얼을 확인하고, 원격 조치가 불가능하면 현장 점검을 진행하세요.")
             lines.append("\n확인 한계: 관측값만으로 고장 원인을 확정할 수 없습니다.")
+        lines.append("\n" + format_device_logs(state.get("device_logs", {"ok": False})))
         docs = state.get("retrieval", {}).get("documents", [])
         if docs:
             lines.append("\n참고 매뉴얼 검색 근거:")
@@ -206,7 +221,7 @@ def build_graph(deps):
             status = "normal" if assessment["status"] == "healthy" else "open"
             record_id = deps.session_store.record_maintenance(state["device_id"], "inspection", status, summary,
                 {"data": data, "assessment": assessment, "source_ids": [d["source_id"] for d in docs],
-                 "answer_source": source, "qa": state.get("qa"), "query": state["query"]})
+                 "answer_source": source, "qa": state.get("qa"), "query": state["query"], "device_logs": state.get("device_logs")})
         return {"final": "\n".join(lines), "answer_source": source, "maintenance_id": record_id}
 
     graph = StateGraph(IoTState)

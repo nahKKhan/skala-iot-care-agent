@@ -252,6 +252,7 @@ async def chat(req: ChatRequest):
     result, run_id = await _handle_chat(req.message, req.thread_id)
     return {"reply": result["final"], "events": result.get("events", []),
             "sources": result.get("retrieval", {}).get("documents", []),
+            "device_logs": result.get("device_logs"),
             "recovery": _recovery_offer(result),
             "metadata": _metadata(result, run_id)}
 
@@ -289,7 +290,7 @@ async def chat_stream(message: str, thread_id: str = "default"):
                 for node_name, delta in payload.items():
                     if not isinstance(delta, dict):
                         continue
-                    for key in ("route", "device_id", "result", "assessment", "answer_source", "llm_usage", "llm_error", "retrieval", "qa", "attempts", "maintenance_id"):
+                    for key in ("route", "device_id", "result", "assessment", "answer_source", "llm_usage", "llm_error", "retrieval", "qa", "attempts", "maintenance_id", "device_logs"):
                         if key in delta:
                             inspection[key] = delta[key]
                     for ev in (delta.get("events") or [])[seen:]:
@@ -301,7 +302,7 @@ async def chat_stream(message: str, thread_id: str = "default"):
                         final = delta["final"]
                     if delta.get("last_prompt"):
                         last_prompt = delta["last_prompt"]
-            yield f"data: {json.dumps({'type': 'FinalAnswer', 'reply': final, 'prompt': last_prompt, 'recovery': _recovery_offer(inspection), 'metadata': _metadata(inspection, None), 'sources': inspection.get('retrieval', {}).get('documents', [])}, ensure_ascii=False)}\n\n"
+            yield f"data: {json.dumps({'type': 'FinalAnswer', 'reply': final, 'prompt': last_prompt, 'recovery': _recovery_offer(inspection), 'metadata': _metadata(inspection, None), 'sources': inspection.get('retrieval', {}).get('documents', []), 'device_logs': inspection.get('device_logs')}, ensure_ascii=False)}\n\n"
             deps.session_store.append(thread_id, "user", message)
             deps.session_store.append(thread_id, "assistant", final)
         yield "data: [DONE]\n\n"

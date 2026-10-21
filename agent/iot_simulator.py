@@ -2,6 +2,7 @@
 import copy
 import json
 import uuid
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from .device_rules import assess_device, can_recover
 
@@ -12,6 +13,9 @@ class IoTSimulator:
     def __init__(self):
         self.seed = json.loads((DATA_DIR / "devices.json").read_text())
         self.outcomes = json.loads((DATA_DIR / "scenarios.json").read_text())
+        self.log_seed = json.loads((DATA_DIR / "device_logs.json").read_text())
+        self.logs = {}
+        self.log_sequences = {}
         self.devices = {}
         self.unavailable = set()
         self.requests = {}
@@ -24,7 +28,39 @@ class IoTSimulator:
         self.devices[device_id] = {**copy.deepcopy(self.seed[device_id]), "telemetry_sequence": 0,
                                    "recovery_attempts": 0, "scenario_revision": uuid.uuid4().hex}
         self.unavailable.discard(device_id)
+        self.logs[device_id] = []
+        self.log_sequences[device_id] = 0
+        now = datetime.now(timezone.utc)
+        for entry in sorted(self.log_seed.get(device_id, []), key=lambda row: row["offset_seconds"]):
+            self._append_log(device_id, entry["level"], entry["component"], entry["code"], entry["message"],
+                             entry.get("details"), now + timedelta(seconds=entry["offset_seconds"]))
         return {"ok": True, "device_id": device_id, "simulated": True, "data": copy.deepcopy(self.devices[device_id])}
+
+    def _append_log(self, device_id, level, component, code, message, details=None, timestamp=None):
+        self.log_sequences[device_id] += 1
+        self.logs[device_id].append({
+            "id": f"{self.devices[device_id]['scenario_revision']}:{self.log_sequences[device_id]}",
+            "timestamp": (timestamp or datetime.now(timezone.utc)).isoformat(timespec="milliseconds"),
+            "level": level, "component": component, "code": code, "message": message,
+            "details": copy.deepcopy(details or {}),
+        })
+        self.logs[device_id] = self.logs[device_id][-200:]
+
+    def get_logs(self, device_id, limit=10, level=None):
+        """가상 수집 버퍼의 최근 이벤트. 조회는 장치나 로그를 변경하지 않는다."""
+        if device_id not in self.devices:
+            return {"ok": False, "device_id": device_id, "error": "등록되지 않은 장치입니다."}
+        if type(limit) is not int or not 1 <= limit <= 100:
+            return {"ok": False, "device_id": device_id, "error": "limit은 1~100 사이 정수여야 합니다."}
+        if level is not None and level not in ("INFO", "WARN", "ERROR"):
+            return {"ok": False, "device_id": device_id, "error": "level은 INFO, WARN, ERROR 중 하나여야 합니다."}
+        records = [entry for entry in self.logs[device_id] if level is None or entry["level"] == level]
+        return {"ok": True, "device_id": device_id, "simulated": True, "origin": "simulated_event_buffer",
+                "scenario_revision": self.devices[device_id]["scenario_revision"],
+                "device_available": device_id not in self.unavailable and self.devices[device_id]["connected"],
+                "fetched_at": datetime.now(timezone.utc).isoformat(timespec="milliseconds"),
+                "count": len(records[-limit:]), "matching_count": len(records), "total_count": len(self.logs[device_id]),
+                "logs": copy.deepcopy(records[-limit:])}
 
     def status(self, device_id):
         if device_id not in self.devices:
@@ -45,14 +81,20 @@ class IoTSimulator:
             error = ("현재 데이터 수신 지연이 없습니다." if assess_device(data)["status"] == "healthy" else
                      "이 시나리오에서 이미 복구를 시도했습니다. 현장 점검이 필요합니다." if data["recovery_attempts"] else
                      "배터리·연결 상태 또는 지원 명령 조건 때문에 원격 복구할 수 없습니다.")
+            self._append_log(device_id, "WARN", "gateway", "RESTART_REJECTED", error)
             return {"ok": False, "device_id": device_id, "error": error}
         data["recovery_attempts"] += 1
+        self._append_log(device_id, "INFO", "gateway", "RESTART_REQUEST_ACCEPTED", "수집 모듈 재시작 요청을 접수했습니다. 새 데이터 수신은 별도 확인이 필요합니다.")
         outcome = self.outcomes.get(device_id, "no_data")
         if outcome == "recover":
             data["telemetry_age_seconds"] = 0
             data["telemetry_sequence"] += 1
+            self._append_log(device_id, "INFO", "gateway", "TELEMETRY_RECEIVED", "재시작 요청 이후 새 센서 데이터를 수신했습니다.", {"telemetry_sequence": data["telemetry_sequence"]})
         elif outcome == "verification_error":
             self.unavailable.add(device_id)
+            self._append_log(device_id, "ERROR", "gateway", "STATUS_READ_FAILED", "명령 접수 후 장치 상태를 확인할 수 없습니다. 복구 결과는 미확인입니다.")
+        else:
+            self._append_log(device_id, "WARN", "gateway", "TELEMETRY_STILL_MISSING", "명령 접수 후 새 데이터 수신이 관측되지 않았습니다.")
         result = {"ok": True, "device_id": device_id, "command_accepted": True, "simulated": True,
                   "message": "가상 재시작 명령을 접수했습니다. 장치 상태를 다시 조회하세요."}
         if request_id:
