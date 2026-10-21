@@ -24,7 +24,8 @@ function setup(recover) {
   runInNewContext(script, {
     Vue: {
       createApp: options => ({mount: () => { state = options.setup(); }}),
-      ref: value => ({value}), reactive: value => value, nextTick: async () => {},
+      ref: value => ({value}), reactive: value => value, nextTick: async callback => { if (callback) callback(); },
+      computed: getter => ({get value() { return getter(); }}),
     },
     fetch: async (url, options) => {
       calls.push({url, options});
@@ -147,4 +148,77 @@ test('scenario reset invalidates old offers without deleting maintenance history
   assert.equal(posts(ui).length, 0);
   await ui.state.loadMaintenance();
   assert.equal(ui.state.maintenanceRecords.value.length, 1);
+});
+
+
+test('dashboard keeps missing observations unknown and preserves zero and offline values', async () => {
+  const ui = setup(async () => response(successful));
+  await ui.state.loadMaintenance();
+  assert.equal(ui.state.snapshot.value.data, null);
+  ui.state.maintenanceRecords.value = [{device_id: 'sensor-02', kind: 'inspection', status: 'open',
+    evidence: {data: {battery_pct: 0, connected: false, telemetry_age_seconds: 0}}}];
+  assert.equal(ui.state.snapshot.value.data.battery_pct, 0);
+  assert.equal(ui.state.snapshot.value.data.connected, false);
+  assert.equal(ui.state.snapshot.value.data.telemetry_age_seconds, 0);
+  ui.state.chooseDevice('sensor-03');
+  assert.equal(ui.state.snapshot.value, null);
+  assert.equal(ui.state.deviceState('sensor-03'), '점검 전');
+});
+
+test('dashboard filters history and counts recorded recovery outcomes only', () => {
+  const ui = setup(async () => response(successful));
+  ui.state.maintenanceRecords.value = [
+    {device_id: 'sensor-02', kind: 'recovery', status: 'resolved'},
+    {device_id: 'sensor-03', kind: 'inspection', status: 'needs_visit'},
+    {device_id: 'sensor-02', kind: 'recovery', status: 'verification_pending'},
+    {device_id: 'sensor-01', kind: 'inspection', status: 'normal'},
+  ];
+  assert.equal(ui.state.confirmedRecoveries.value, 1);
+  assert.equal(ui.state.followupRecords.value, 2);
+  assert.equal(ui.state.filteredHistory.value.length, 4);
+  ui.state.historyFilter.value = 'selected';
+  assert.equal(ui.state.filteredHistory.value.length, 2);
+  ui.state.chooseDevice('sensor-03');
+  assert.equal(ui.state.filteredHistory.value.length, 1);
+  assert.equal(ui.state.filteredHistory.value[0].device_id, 'sensor-03');
+});
+
+test('candidate cards use only final answer candidates with retrieved source metadata', () => {
+  const ui = setup(async () => response(successful));
+  const source = {source_id: 'delay#1', title: '수신 지연', text: '점검 절차', causes: [
+    {id: 'collection', title: '수집 모듈 일시 정지', check: '수신 로그 확인'},
+    {id: 'network', title: '네트워크 지연', check: '게이트웨이 로그 확인'},
+  ]};
+  ui.inspect(offer, '원인 후보:\n- 수집 모듈 일시 정지 [delay#1]\n- 미등록 후보 [unknown#1]', [source]);
+  assert.equal(ui.state.candidateList.value.length, 1);
+  assert.equal(ui.state.candidateList.value[0].id, 'collection');
+  assert.equal(ui.state.candidateList.value[0].sourceId, 'delay#1');
+  ui.state.chooseDevice('sensor-03');
+  assert.equal(ui.state.candidateList.value.length, 0);
+  assert.equal(ui.state.manualSources.value.length, 0);
+});
+
+test('recovery observations replace pre-recovery values and yield to a newer inspection', async () => {
+  const ui = setup(async () => response(successful));
+  const item = ui.inspect();
+  await ui.state.onRecover(item);
+  assert.equal(ui.state.snapshot.value.data.telemetry_age_seconds, 0);
+  assert.equal(ui.state.snapshot.value.status, 'resolved');
+  ui.state.maintenanceRecords.value = [{device_id: 'sensor-02', kind: 'inspection', status: 'open',
+    updated_at: new Date(Date.parse(item.recoveredAt) + 60000).toISOString(),
+    evidence: {data: {telemetry_age_seconds: 600}}}];
+  assert.equal(ui.state.snapshot.value.data.telemetry_age_seconds, 600);
+  assert.equal(ui.state.snapshot.value.status, 'open');
+});
+
+test('unknown recovery and reset do not show old observations as current', async () => {
+  const ui = setup(async () => response({...successful, after: null, recovery_verified: null}));
+  const item = ui.inspect();
+  await ui.state.onRecover(item);
+  assert.equal(ui.state.snapshot.value.data, null);
+  assert.equal(ui.state.snapshot.value.status, 'verification_pending');
+  await ui.state.resetSelected();
+  assert.equal(ui.state.snapshot.value, null);
+  assert.equal(ui.state.activeResult.value, null);
+  assert.equal(ui.state.deviceState('sensor-02'), '재점검 필요');
 });

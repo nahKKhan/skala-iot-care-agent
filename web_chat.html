@@ -1,206 +1,231 @@
 <!doctype html>
 <html lang="ko">
 <head>
-<meta charset="utf-8" />
-<title>IoT 장치 점검·복구 지원</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#f5f7fa">
+<title>IoT Care · 장치 점검과 유지보수</title>
 <style>
-  :root { color-scheme: dark; }
-  * { box-sizing: border-box; }
-  html, body { height: 100%; }
-  body {
-    margin: 0; height: 100vh; display: flex; flex-direction: column;
-    font-family: -apple-system, "Apple SD Gothic Neo", sans-serif;
-    background: #1e1e2e; color: #e2e2f0;
-    overflow: hidden;   /* #log만 스크롤되게, 바디 자체는 늘어나지 않게 고정 */
-  }
-  #app {
-    flex: 1; min-height: 0;   /* Vue 마운트 루트가 header/#log/form을 감싸므로,
-                                 body의 flex 흐름이 여기까지 이어지게 한다 */
-    display: flex; flex-direction: column;
-  }
-  header {
-    padding: 14px 20px; background: #262638; border-bottom: 1px solid #3a3a52;
-    font-weight: 600; font-size: 15px;
-  }
-  header span { color: #8b8bd8; font-weight: 400; font-size: 13px; margin-left: 8px; }
-  #log {
-    flex: 1; min-height: 0;   /* flex 자식 기본 최소높이(콘텐츠 크기)를 풀어줘야
-                                 내용이 길어져도 바디가 안 늘어나고 여기서만 스크롤됨 */
-    overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 12px;
-  }
-  #log::-webkit-scrollbar { width: 9px; }
-  #log::-webkit-scrollbar-track { background: transparent; }
-  #log::-webkit-scrollbar-thumb { background: #3a3a52; border-radius: 6px; }
-  #log::-webkit-scrollbar-thumb:hover { background: #4a4a68; }
-  .row { display: flex; }
-  .row.user { justify-content: flex-end; }
-  .bubble {
-    max-width: 70%; padding: 10px 14px; border-radius: 14px; line-height: 1.5;
-    font-size: 14px; white-space: pre-wrap;
-  }
-  .row.user .bubble { background: #5b5bd6; color: white; border-bottom-right-radius: 4px; }
-  .row.agent .bubble { background: #2e2e42; border-bottom-left-radius: 4px; }
-  .steps {
-    max-width: 70%; font-size: 12px; color: #9a9ac0; padding: 6px 14px;
-    display: flex; flex-direction: column; gap: 3px;
-  }
-  .steps .step::before { content: "⏳ "; }
-  .steps .step.done::before { content: "✓ "; color: #7ee787; }
-  .prompt-box {
-    flex-shrink: 0;   /* #log가 스크롤 영역이 되면서(min-height:0) <details>가 flex
-                         자식으로서 내용 없이 찌그러지는 걸 방지 */
-    max-width: 70%; margin-top: -4px; background: #17171f; border: 1px solid #3a3a52;
-    border-radius: 10px; font-size: 12px; overflow: hidden;
-  }
-  .prompt-box summary {
-    cursor: pointer; padding: 7px 12px; color: #8b8bd8; user-select: none;
-    list-style: none;
-  }
-  .prompt-box summary::-webkit-details-marker { display: none; }
-  .prompt-box summary::before { content: "🔍 "; }
-  .prompt-box[open] summary::before { content: "🔽 "; }
-  .prompt-box pre {
-    margin: 0; padding: 10px 12px; border-top: 1px solid #3a3a52;
-    background: #11111a; color: #c3c3e0; white-space: pre-wrap; word-break: break-word;
-    font-family: ui-monospace, "SF Mono", Menlo, monospace; max-height: 320px; overflow-y: auto;
-  }
-  form { display: flex; gap: 8px; padding: 14px 20px; background: #262638; border-top: 1px solid #3a3a52; }
-  input {
-    flex: 1; padding: 11px 14px; border-radius: 10px; border: 1px solid #3a3a52;
-    background: #1e1e2e; color: #e2e2f0; font-size: 14px;
-  }
-  input:focus { outline: 1px solid #5b5bd6; }
-  button {
-    padding: 11px 20px; border-radius: 10px; border: none; background: #5b5bd6;
-    color: white; font-size: 14px; cursor: pointer;
-  }
-  button:disabled { background: #3a3a52; cursor: default; }
-
-  .recovery-panel {
-    margin-top: 14px; padding-top: 12px; border-top: 1px solid #525276;
-    white-space: normal;
-  }
-  .recovery-target { margin: 0 0 5px; font-size: 13px; font-weight: 600; }
-  .recovery-hint { margin: 0 0 10px; font-size: 12px; color: #b8b8d3; line-height: 1.5; }
-  .recovery-button { padding: 9px 14px; font-size: 13px; }
-  .recovery-button:focus-visible { outline: 2px solid #b8b8ff; outline-offset: 3px; }
-  .recovery-feedback { margin: 10px 0 0; font-size: 13px; line-height: 1.5; }
-  .recovery-feedback.done { color: #9de4b1; }
-  .recovery-feedback.failed, .recovery-feedback.unknown { color: #ffd28b; }
-  .recovery-feedback.blocked { color: #ffb0b0; }
-  .recovery-feedback.superseded { color: #b8b8d3; }
-  .recovery-metrics {
-    display: grid; grid-template-columns: auto 1fr; gap: 5px 14px;
-    margin: 10px 0 0; font-size: 12px;
-  }
-  .recovery-metrics dt { color: #b8b8d3; }
-  .recovery-metrics dd { margin: 0; font-variant-numeric: tabular-nums; }
-  .toolbar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; padding: 10px 20px; background: #262638; }
-  .toolbar select { max-width: 320px; padding: 8px; background: #1e1e2e; color: #e2e2f0; border: 1px solid #525276; border-radius: 6px; }
-  .toolbar button { padding: 8px 12px; font-size: 12px; }
-  .toolbar small { color: #b8b8d3; }
-  .sources { margin-top: 14px; font-size: 12px; white-space: normal; }
-  .sources summary { cursor: pointer; color: #b8b8ff; }
-  .sources pre { white-space: pre-wrap; max-height: 240px; overflow: auto; }
-  .history { padding: 8px 20px; border-top: 1px solid #3a3a52; font-size: 12px; }
-  .history summary { cursor: pointer; }
-  .history-list { max-height: 180px; overflow: auto; }
-  .history-row { padding: 8px 0; border-bottom: 1px solid #3a3a52; }
-  @media (max-width: 600px) {
-    .bubble, .steps, .prompt-box { max-width: 94%; }
-    form { padding: 12px; }
-    input { min-width: 0; }
-  }
+  :root { color-scheme: light; --bg:#f5f7fa; --paper:#fff; --ink:#182437; --muted:#66758a; --line:#e3e8ef; --blue:#2463cf; --blue-soft:#eef4ff; --green:#22734a; --amber:#95620c; --red:#b34545; }
+  * { box-sizing:border-box; }
+  body { margin:0; background:var(--bg); color:var(--ink); font-family:-apple-system,BlinkMacSystemFont,"Apple SD Gothic Neo","Malgun Gothic",sans-serif; font-size:14px; line-height:1.55; }
+  [v-cloak] { display:none; }
+  button,input { font:inherit; }
+  button { cursor:pointer; }
+  button:disabled { cursor:not-allowed; opacity:.5; }
+  button:focus-visible,input:focus-visible,summary:focus-visible,a:focus-visible { outline:3px solid #94b9ff; outline-offset:3px; }
+  button { border:1px solid var(--line); border-radius:8px; background:#fff; color:var(--ink); padding:9px 13px; font-weight:600; }
+  button:hover:not(:disabled) { border-color:#b7c7dd; background:#f7f9fc; }
+  button.primary { background:var(--blue); border-color:var(--blue); color:#fff; }
+  button.primary:hover:not(:disabled) { background:#1d52b0; }
+  button.text-button { border:0; padding:4px 0; background:transparent; color:var(--blue); font-size:12px; }
+  h1,h2,h3,p { margin:0; }
+  h1 { font-size:23px; letter-spacing:-.7px; }
+  h2 { font-size:15px; letter-spacing:-.3px; }
+  h3 { font-size:13px; }
+  small,.muted { color:var(--muted); }
+  .page { max-width:1580px; padding:26px 30px 34px; margin:auto; }
+  .topbar { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:24px; }
+  .brand { display:flex; gap:12px; align-items:center; }
+  .brand-mark { width:40px; height:40px; border:1px solid #ccdcfa; background:var(--blue-soft); color:var(--blue); border-radius:11px; display:grid; place-items:center; font-size:24px; font-weight:600; }
+  .subtitle { color:var(--muted); margin-top:2px; font-size:13px; }
+  .top-actions { display:flex; align-items:center; gap:14px; }
+  .connection { font-size:12px; text-align:right; }
+  .connection .dot { display:inline-block; width:7px; height:7px; background:#a1adbd; border-radius:50%; margin-right:5px; }
+  .connection .dot.connected { background:var(--green); }
+  .connection small { display:block; font-size:11px; margin-top:2px; }
+  .summary-grid { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:14px; margin-bottom:22px; }
+  .summary-card { background:var(--paper); border:1px solid var(--line); border-radius:10px; padding:16px 20px; }
+  .summary-card .label { font-size:12px; color:var(--muted); }
+  .summary-card .value { font-size:27px; font-weight:650; letter-spacing:-1px; line-height:1.3; margin:6px 0 3px; font-variant-numeric:tabular-nums; }
+  .summary-card small { font-size:11px; }
+  .layout { display:grid; grid-template-columns:225px minmax(0,1fr); gap:20px; align-items:start; }
+  .panel { background:var(--paper); border:1px solid var(--line); border-radius:11px; min-width:0; }
+  .panel-heading { display:flex; align-items:center; justify-content:space-between; gap:10px; padding:17px 18px; border-bottom:1px solid var(--line); }
+  .panel-heading small { font-size:11px; }
+  .device-panel { position:sticky; top:20px; }
+  .device-list { padding:8px; display:flex; flex-direction:column; gap:4px; max-height:65vh; overflow:auto; }
+  .device-option { width:100%; padding:12px; text-align:left; background:transparent; border:1px solid transparent; border-radius:8px; font-weight:400; }
+  .device-option.selected { background:var(--blue-soft); border-color:#c9dafa; }
+  .device-option .id { font-size:11px; font-family:ui-monospace,monospace; color:var(--muted); display:block; }
+  .device-option .name { display:block; font-size:13px; font-weight:600; margin:3px 0 7px; }
+  .device-footer { padding:13px 16px; border-top:1px solid var(--line); font-size:11px; color:var(--muted); }
+  .badge { display:inline-flex; align-items:center; padding:3px 7px; border-radius:5px; background:#f0f3f7; color:#617086; font-size:11px; font-weight:500; white-space:nowrap; }
+  .badge.success { background:#ecf7f0; color:var(--green); }
+  .badge.warning { background:#fff5df; color:var(--amber); }
+  .badge.danger { background:#fdf0ef; color:var(--red); }
+  .workspace { min-width:0; }
+  .workspace-heading { display:flex; justify-content:space-between; align-items:center; gap:15px; margin-bottom:15px; }
+  .workspace-heading h2 { font-size:18px; }
+  .workspace-heading .device-id { font-size:12px; color:var(--muted); margin-top:2px; }
+  .workspace-actions { display:flex; align-items:center; gap:8px; flex-shrink:0; }
+  .notice { font-size:12px; color:var(--muted); margin-bottom:13px; min-height:19px; }
+  .workbench { display:grid; grid-template-columns:minmax(0,1.2fr) minmax(310px,.9fr); gap:16px; align-items:start; }
+  .chat-panel { display:flex; flex-direction:column; height:740px; max-height:calc(100vh - 225px); min-height:510px; }
+  .chat-heading { align-items:flex-start; }
+  .chat-heading p { margin-top:3px; font-size:12px; color:var(--muted); }
+  #log { flex:1; min-height:0; overflow:auto; padding:20px; display:flex; flex-direction:column; gap:15px; scroll-behavior:smooth; }
+  .empty-chat { margin:auto; padding:25px 10px; max-width:370px; text-align:center; }
+  .empty-symbol { margin:0 auto 14px; width:44px; height:44px; display:grid; place-items:center; border-radius:12px; background:var(--blue-soft); color:var(--blue); font-size:23px; }
+  .empty-chat h3 { font-size:16px; margin-bottom:8px; }
+  .empty-chat p { color:var(--muted); font-size:13px; }
+  .example-list { display:grid; gap:8px; margin-top:21px; text-align:left; }
+  .example-list button { font-weight:400; text-align:left; font-size:12px; padding:10px 12px; }
+  .row { display:flex; flex-direction:column; align-items:flex-start; gap:5px; }
+  .row.user { align-items:flex-end; }
+  .message-role { font-size:10px; letter-spacing:.5px; color:var(--muted); }
+  .bubble { max-width:96%; font-size:13px; line-height:1.75; white-space:pre-wrap; overflow-wrap:anywhere; padding:12px 14px; border-radius:10px; background:#f5f7fa; }
+  .row.user .bubble { background:var(--blue-soft); color:#22467d; max-width:90%; }
+  .bubble-actions { display:flex; align-items:center; flex-wrap:wrap; gap:10px; }
+  .message-footnote { font-size:10px; color:var(--muted); }
+  .steps { font-size:11px; color:var(--muted); border-left:2px solid #dce5f3; padding:3px 0 3px 10px; }
+  .steps .step { margin:3px 0; }
+  .steps .step::before { content:'· '; }
+  .steps.done .step::before { content:'✓ '; color:var(--green); }
+  .prompt-box { font-size:11px; color:var(--muted); }
+  .prompt-box pre { max-height:230px; overflow:auto; white-space:pre-wrap; padding:12px; background:#f6f8fa; }
+  .chat-bottom { padding:12px 16px 16px; border-top:1px solid var(--line); }
+  .quick-actions { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
+  .quick-actions button { font-weight:400; padding:5px 8px; font-size:11px; color:var(--muted); }
+  .composer { display:flex; gap:8px; }
+  .composer input { min-width:0; flex:1; border:1px solid #d7dfe9; border-radius:8px; padding:11px 12px; color:var(--ink); background:#fff; font-size:13px; }
+  .composer input::placeholder { color:#8b97a7; }
+  .chat-hint { margin-top:8px; font-size:10px; color:var(--muted); }
+  .loading-line { color:var(--blue); font-size:11px; display:flex; align-items:center; gap:7px; padding:0 4px; }
+  .spinner { width:12px; height:12px; border:2px solid #dce8fc; border-top-color:var(--blue); border-radius:50%; animation:spin .9s linear infinite; flex-shrink:0; }
+  @keyframes spin { to { transform:rotate(360deg); } }
+  .analysis-column { display:grid; gap:13px; }
+  .card-body { padding:16px 18px; }
+  .observation-top { display:flex; gap:7px; align-items:center; justify-content:space-between; margin-bottom:14px; }
+  .observation-top small { font-size:10px; }
+  .facts { display:grid; grid-template-columns:1fr 1fr; gap:14px 12px; margin:0; }
+  .facts div { min-width:0; }
+  .facts dt { color:var(--muted); font-size:11px; margin-bottom:4px; }
+  .facts dd { margin:0; font-size:17px; font-weight:600; font-variant-numeric:tabular-nums; }
+  .facts dd small { font-size:11px; font-weight:400; }
+  .card-note { color:var(--muted); font-size:11px; margin-top:13px; }
+  .empty-card { font-size:12px; color:var(--muted); line-height:1.7; }
+  .candidate { padding:11px 0; border-bottom:1px solid #edf0f4; }
+  .candidate:first-child { padding-top:0; }
+  .candidate:last-child { border:0; padding-bottom:0; }
+  .candidate strong { font-size:12px; font-weight:600; }
+  .candidate p { font-size:11px; color:var(--muted); margin-top:4px; }
+  .source-id { font-size:10px; font-family:ui-monospace,monospace; color:var(--blue); }
+  .manual { border:1px solid var(--line); border-radius:7px; margin-bottom:8px; padding:10px 11px; }
+  .manual:last-child { margin-bottom:0; }
+  .manual summary { cursor:pointer; list-style:none; font-size:12px; font-weight:500; }
+  .manual summary::before { content:'+ '; color:var(--blue); }
+  .manual[open] summary::before { content:'− '; }
+  .manual-section { margin:4px 0 6px; color:var(--muted); font-size:10px; }
+  .manual pre { white-space:pre-wrap; overflow-wrap:anywhere; font-family:inherit; font-size:11px; line-height:1.75; border-top:1px solid var(--line); padding-top:10px; margin:10px 0 0; }
+  .recovery-body p { font-size:12px; color:var(--muted); }
+  .recovery-target { font-size:12px; margin-bottom:8px; }
+  .recovery-button { margin-top:13px; width:100%; }
+  .recovery-feedback { margin-top:11px; font-size:12px; line-height:1.7; }
+  .recovery-feedback.done { color:var(--green); }
+  .recovery-feedback.failed,.recovery-feedback.unknown { color:var(--amber); }
+  .recovery-feedback.blocked { color:var(--red); }
+  .recovery-metrics { display:grid; grid-template-columns:1fr auto; margin:12px 0 0; font-size:11px; gap:6px 10px; padding-top:10px; border-top:1px solid var(--line); }
+  .recovery-metrics dt { color:var(--muted); }
+  .recovery-metrics dd { margin:0; font-variant-numeric:tabular-nums; }
+  .quality-row { display:flex; justify-content:space-between; align-items:center; gap:6px; padding-top:12px; margin-top:14px; border-top:1px solid var(--line); font-size:11px; color:var(--muted); }
+  .history-panel { margin-top:22px; }
+  .history-actions { display:flex; align-items:center; gap:8px; }
+  .segmented { display:flex; padding:3px; border:1px solid var(--line); border-radius:7px; background:#f8fafc; }
+  .segmented button { border:0; padding:4px 8px; background:transparent; font-size:11px; font-weight:400; }
+  .segmented button.active { background:#fff; color:var(--blue); box-shadow:0 1px 3px #18243716; }
+  .table-wrap { overflow:auto; max-height:360px; }
+  table { border-collapse:collapse; width:100%; text-align:left; font-size:12px; }
+  thead { position:sticky; top:0; background:#fafbfd; }
+  th { font-size:11px; font-weight:500; color:var(--muted); white-space:nowrap; }
+  th,td { padding:13px 18px; border-bottom:1px solid #edf0f4; vertical-align:top; }
+  td.summary-cell { min-width:230px; max-width:500px; }
+  .history-time { font-size:11px; white-space:nowrap; color:var(--muted); }
+  .history-device { font-size:11px; font-family:ui-monospace,monospace; }
+  .history-detail { font-size:11px; color:var(--muted); margin-top:5px; }
+  .table-empty { padding:28px; text-align:center; color:var(--muted); font-size:12px; }
+  .footer-note { text-align:right; margin-top:16px; color:var(--muted); font-size:10px; }
+  @media (min-width:1500px) { .chat-panel { height:850px; } }
+  @media (max-width:1150px) { .page { padding:22px; } .layout { grid-template-columns:200px minmax(0,1fr); gap:16px; } .workbench { grid-template-columns:1fr; } .chat-panel { height:570px; max-height:none; } .analysis-column { grid-template-columns:1fr 1fr; } .workspace-heading { flex-wrap:wrap; } }
+  @media (max-width:760px) { .page { padding:16px; } .topbar { align-items:flex-start; } .top-actions { gap:8px; } .connection { max-width:180px; } .connection small { overflow-wrap:anywhere; } .summary-grid { grid-template-columns:repeat(2,minmax(0,1fr)); gap:9px; margin-bottom:16px; } .summary-card { padding:12px 15px; } .summary-card .value { font-size:23px; } .layout { grid-template-columns:1fr; } .device-panel { position:static; } .device-list { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); max-height:235px; } .device-option { padding:9px; } .device-option .name { font-size:11px; } .device-footer { padding:9px 15px; } .workspace-heading h2 { font-size:17px; } .history-actions { flex-wrap:wrap; } th,td { padding:11px 13px; } }
+  @media (max-width:480px) { .brand-mark { display:none; } h1 { font-size:21px; } .subtitle { font-size:11px; } .connection { max-width:140px; font-size:10px; } .top-actions>button { padding:7px; font-size:11px; } .device-list { grid-template-columns:1fr 1fr; } .workspace-actions { width:100%; } .analysis-column { grid-template-columns:1fr; } .chat-panel { min-height:480px; height:570px; } #log { padding:14px; } .composer button { padding:9px 12px; } .panel-heading { padding:14px 15px; } .history-panel .panel-heading { flex-wrap:wrap; } }
+  @media (prefers-reduced-motion:reduce) { .spinner { animation:none; } #log { scroll-behavior:auto; } }
 </style>
 </head>
 <body>
-<div id="app">
-  <header>IoT 장치 점검·복구 지원 <span>{{ backendLabel }}</span></header>
-  <div class="toolbar">
-    <select v-model="selectedDevice" aria-label="점검 장치 선택" :disabled="sending || recovering !== null">
-      <option v-for="device in deviceList" :value="device.device_id">{{ device.device_id }} · {{ device.name }}</option>
-    </select>
-    <button type="button" @click="inspectSelected" :disabled="sending || recovering !== null">선택 장치 점검</button>
-    <button type="button" @click="resetSelected" :disabled="sending || recovering !== null">가상 상태 초기화</button>
-    <small>{{ toolbarMessage }}</small>
-  </div>
-  <div id="log" ref="logEl">
-    <template v-for="item in log" :key="item.id">
-      <div v-if="item.kind === 'user'" class="row user">
-        <div class="bubble">{{ item.text }}</div>
-      </div>
-
-      <div v-else-if="item.kind === 'steps'" class="steps">
-        <div v-for="(step, i) in item.steps" :key="i" class="step">{{ step }}</div>
-      </div>
-
-      <div v-else-if="item.kind === 'agent'" class="row agent">
-        <div class="bubble">
-          <div>{{ item.text }}</div>
-          <details v-if="item.sources?.length" class="sources">
-            <summary>검색된 매뉴얼 근거 {{ item.sources.length }}개 보기</summary>
-            <div v-for="source in item.sources" :key="source.source_id">
-              <p>[{{ source.source_id }}] {{ source.title }} · {{ source.section }}</p>
-              <small>{{ source.origin }} · 문서 버전 {{ source.version }}</small>
-              <pre>{{ source.text }}</pre>
-              <ul v-if="source.causes?.length">
-                <li v-for="cause in source.causes" :key="cause.id">문서 공통 후보: {{ cause.title }} · 추가 확인: {{ cause.check }}</li>
-              </ul>
-            </div>
-          </details>
-          <div v-if="item.recovery" class="recovery-panel">
-            <p class="recovery-target">{{ item.recovery.device_name }} · {{ item.recovery.device_id }}</p>
-            <p class="recovery-hint">가상 장치의 수집 모듈을 재시작하고 새 데이터 수신 여부를 확인합니다.</p>
-            <button
-              type="button"
-              class="recovery-button"
-              :disabled="sending || recovering !== null || item.recoveryStatus !== 'ready'"
-              :aria-busy="item.recoveryStatus === 'running'"
-              @click="onRecover(item)"
-            >{{ recoveryButtonLabel(item) }}</button>
-            <p v-if="item.recoveryFeedback"
-               class="recovery-feedback"
-               :class="item.recoveryStatus"
-               role="status" aria-live="polite">{{ item.recoveryFeedback }}</p>
-            <dl v-if="item.recoveryResult?.before && item.recoveryResult?.after" class="recovery-metrics">
-              <dt>마지막 수신 이후</dt>
-              <dd>{{ item.recoveryResult.before.telemetry_age_seconds }}초 → {{ item.recoveryResult.after.telemetry_age_seconds }}초</dd>
-              <dt>데이터 수신 번호</dt>
-              <dd>{{ item.recoveryResult.before.telemetry_sequence }} → {{ item.recoveryResult.after.telemetry_sequence }}</dd>
-            </dl>
-          </div>
-        </div>
-      </div>
-
-      <details v-else-if="item.kind === 'prompt'" class="prompt-box">
-        <summary>LLM에 전달된 최종 프롬프트 보기</summary>
-        <pre>{{ item.text }}</pre>
-      </details>
-    </template>
-  </div>
-  <details class="history">
-    <summary>최근 유지보수 기록 {{ maintenanceRecords.length }}건 · <button type="button" @click="loadMaintenance">새로고침</button></summary>
-    <div class="history-list">
-      <p v-if="historyMessage">{{ historyMessage }}</p>
-      <div v-for="record in maintenanceRecords" :key="record.id" class="history-row">
-        {{ record.device_id }} · {{ statusLabel(record.status) }} · {{ record.updated_at }}<br>{{ record.summary }}
-      </div>
+<div id="app" v-cloak class="page">
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark" aria-hidden="true">+</div><div><h1>IoT Care</h1><p class="subtitle">장치 점검부터 복구 확인, 유지보수 기록까지</p></div></div>
+    <div class="top-actions">
+      <div class="connection"><span class="dot" :class="{connected: backendConnected}"></span>{{ backendConnected ? '서버 연결됨' : '서버 연결 확인' }}<small>모델 설정 · {{ backendLabel }}</small></div>
+      <button type="button" @click="refreshAll" :disabled="refreshing">{{ refreshing ? '조회 중…' : '새로고침' }}</button>
     </div>
-  </details>
-  <form @submit.prevent="onSubmit">
-    <input
-      v-model="input"
-      autocomplete="off"
-      placeholder="예: sensor-02 점검해줘"
-      :disabled="sending || recovering !== null"
-    />
-    <button type="submit" :disabled="sending || recovering !== null">보내기</button>
-  </form>
-</div>
+  </header>
 
+  <section class="summary-grid" aria-label="최근 기록 요약">
+    <div class="summary-card"><div class="label">등록 장치</div><div class="value">{{ devicesLoaded ? deviceList.length : '—' }}</div><small>조회된 가상 IoT 장치</small></div>
+    <div class="summary-card"><div class="label">최근 점검·조치 기록</div><div class="value">{{ historyLoaded ? maintenanceRecords.length : '—' }}</div><small>최근 조회된 기록 기준</small></div>
+    <div class="summary-card"><div class="label">복구 확인</div><div class="value">{{ historyLoaded ? confirmedRecoveries : '—' }}</div><small>최근 기록 중 새 수신 확인</small></div>
+    <div class="summary-card"><div class="label">후속 점검 필요</div><div class="value">{{ historyLoaded ? followupRecords : '—' }}</div><small>미복구 또는 확인 불가 기록</small></div>
+  </section>
+
+  <main class="layout">
+    <aside class="panel device-panel" aria-labelledby="device-title">
+      <div class="panel-heading"><h2 id="device-title">장치 목록</h2><small>{{ devicesLoaded ? deviceList.length + '개' : deviceError ? '조회 실패' : '조회 중' }}</small></div>
+      <div class="device-list">
+        <button v-for="device in deviceList" :key="device.device_id" type="button" class="device-option" :class="{selected: selectedDevice === device.device_id}" :aria-pressed="selectedDevice === device.device_id" :disabled="sending || recovering !== null" @click="chooseDevice(device.device_id)">
+          <span class="id">{{ device.device_id }}</span><span class="name">{{ device.name }}</span><span class="badge" :class="deviceTone(device.device_id)">{{ deviceState(device.device_id) }}</span>
+        </button>
+        <p v-if="deviceError" class="table-empty" role="status">{{ deviceError }}</p>
+        <p v-else-if="devicesLoaded && !deviceList.length" class="table-empty">등록된 장치가 없습니다.</p>
+        <p v-else-if="!devicesLoaded" class="table-empty">장치 목록을 불러오는 중입니다.</p>
+      </div>
+      <div class="device-footer">상태는 마지막 점검·조치 기록 기준입니다.<br>실시간 센서 데이터가 아닙니다.</div>
+    </aside>
+
+    <section class="workspace" aria-labelledby="workspace-title">
+      <div class="workspace-heading">
+        <div><h2 id="workspace-title">{{ deviceName(selectedDevice) }}</h2><p class="device-id">{{ selectedDevice }} · 가상 장치</p></div>
+        <div class="workspace-actions"><button class="primary" type="button" @click="inspectSelected" :disabled="sending || recovering !== null">{{ sending ? '응답 생성 중…' : '장치 점검 시작' }}</button><button type="button" @click="resetSelected" :disabled="sending || recovering !== null">가상 상태 초기화</button></div>
+      </div>
+      <p class="notice" role="status" aria-live="polite">{{ toolbarMessage === '가상 장치 시나리오' ? '장치를 점검하면 원인 후보와 매뉴얼 근거, 복구 가능 여부가 표시됩니다.' : toolbarMessage }}</p>
+      <div class="workbench">
+        <section class="panel chat-panel" aria-labelledby="chat-title">
+          <div class="panel-heading chat-heading"><div><h2 id="chat-title">장치 상담·점검</h2><p>소개, 상태, 점검 방법과 기록을 물어보세요.</p></div><span class="badge" :class="sending ? 'warning' : 'neutral'">{{ sending ? '확인 중' : '채팅' }}</span></div>
+          <div id="log" ref="logEl" role="log" aria-label="상담 대화" aria-live="polite" :aria-busy="sending">
+            <div v-if="!log.length" class="empty-chat"><div class="empty-symbol" aria-hidden="true">?</div><h3>어떤 점이 궁금하신가요?</h3><p>선택한 장치를 점검하거나<br>필요한 정보부터 확인해 보세요.</p><div class="example-list"><button type="button" @click="sendPrompt(selectedDevice + '가 뭐더라?')">이 장치는 어떤 장치인가요? →</button><button type="button" @click="inspectSelected">상태와 원인 후보를 확인하고 싶어요 →</button><button type="button" @click="sendPrompt('정상 절전과 수신 지연은 어떻게 달라?')">절전과 수신 지연은 어떻게 다른가요? →</button></div></div>
+            <template v-for="item in log" :key="item.id">
+              <div v-if="item.kind === 'user'" class="row user"><span class="message-role">나</span><div class="bubble">{{ item.text }}</div></div>
+              <div v-else-if="item.kind === 'steps' && item.steps.length" class="steps" :class="{done:item.done}"><div v-for="(step,i) in item.steps" :key="i" class="step">{{ step }}</div></div>
+              <div v-else-if="item.kind === 'agent'" class="row agent"><span class="message-role">IoT Care</span><div class="bubble">{{ item.text }}</div><div class="bubble-actions"><button v-if="item.sources?.length || item.recovery" type="button" class="text-button" @click="viewResult(item)">근거·점검 결과 보기 →</button><span v-if="item.receivedAt" class="message-footnote">{{ formatTime(item.receivedAt) }}</span></div></div>
+              <details v-else-if="item.kind === 'prompt'" class="prompt-box"><summary>요청에 사용한 근거 보기</summary><pre>{{ item.text }}</pre></details>
+            </template>
+            <div v-if="sending" class="loading-line" role="status"><span class="spinner" aria-hidden="true"></span>{{ streamStatus }}</div>
+          </div>
+          <div class="chat-bottom"><div class="quick-actions"><button type="button" @click="sendPrompt(selectedDevice + '가 뭐더라?')" :disabled="sending || recovering !== null">장치 소개</button><button type="button" @click="sendPrompt(selectedDevice + ' 배터리 얼마나 남았어?')" :disabled="sending || recovering !== null">배터리 조회</button><button type="button" @click="sendPrompt(selectedDevice + ' 점검 기록 보여줘')" :disabled="sending || recovering !== null">점검 이력</button><button type="button" @click="sendPrompt('정상 절전과 수신 지연은 어떻게 달라?')" :disabled="sending || recovering !== null">매뉴얼 질문</button></div><form class="composer" @submit.prevent="onSubmit"><input v-model="input" autocomplete="off" aria-label="장치에 대해 질문하기" placeholder="예: sensor-02를 점검해줘" :disabled="sending || recovering !== null"><button type="submit" class="primary" :disabled="sending || recovering !== null || !input.trim()">보내기</button></form><p class="chat-hint">가상 복구는 점검 결과의 실행 버튼으로만 요청합니다.</p></div>
+        </section>
+
+        <aside class="analysis-column" ref="analysisEl" aria-label="점검 결과와 근거">
+          <section class="panel"><div class="panel-heading"><h2>최근 확인된 상태</h2><span class="badge" :class="snapshot ? statusTone(snapshot.status) : 'neutral'">{{ snapshot ? statusLabel(snapshot.status) : '점검 전' }}</span></div><div class="card-body"><div class="observation-top"><small>{{ selectedDevice }} · 기록된 관측값</small><small>{{ snapshot?.time ? formatTime(snapshot.time) : '관측 기록 없음' }}</small></div><dl class="facts"><div><dt>배터리</dt><dd>{{ snapshot?.data?.battery_pct ?? '—' }}<small v-if="snapshot?.data?.battery_pct != null"> %</small></dd></div><div><dt>연결</dt><dd>{{ snapshot?.data?.connected === true ? '연결됨' : snapshot?.data?.connected === false ? '끊김' : '—' }}</dd></div><div><dt>마지막 수신 이후</dt><dd>{{ snapshot?.data?.telemetry_age_seconds ?? '—' }}<small v-if="snapshot?.data?.telemetry_age_seconds != null"> 초</small></dd></div><div><dt>전송 주기</dt><dd>{{ snapshot?.data?.report_interval_seconds ?? '—' }}<small v-if="snapshot?.data?.report_interval_seconds != null"> 초</small></dd></div></dl><p v-if="!snapshot" class="card-note">점검 후 확인된 값만 표시합니다.</p><p v-else-if="!snapshot.data" class="card-note">조치 후 상태를 조회하지 못했습니다. 이전 값을 현재 상태로 표시하지 않습니다.</p></div></section>
+
+          <section class="panel"><div class="panel-heading"><h2>원인 후보</h2><small>확정 전 가능성</small></div><div class="card-body"><div v-for="candidate in candidateList" :key="candidate.id" class="candidate"><strong>{{ candidate.title }}</strong><p>{{ candidate.check }}</p><span class="source-id">{{ candidate.sourceId }}</span></div><p v-if="!candidateList.length" class="empty-card">장치 점검에서 제시된 원인 후보가 여기에 표시됩니다. 정상 상태에는 후보가 없을 수 있습니다.</p><div class="quality-row"><span>출처·조치 검수</span><span class="badge" :class="qualityTone">{{ qualityLabel }}</span></div></div></section>
+
+          <section class="panel"><div class="panel-heading"><h2>매뉴얼 검색 근거</h2><span class="badge">{{ manualSources.length }}개</span></div><div class="card-body"><details v-for="source in manualSources" :key="source.source_id" class="manual"><summary>{{ source.title }}</summary><p class="manual-section">{{ source.section }}</p><span class="source-id">{{ source.source_id }}</span><pre>{{ source.text }}</pre><p class="card-note">{{ source.origin || '프로젝트 작성 점검 절차' }} · {{ source.version || '버전 미표시' }}</p></details><p v-if="!manualSources.length" class="empty-card">관련 절차를 검색하면 문서 제목과 실제 근거 문단을 확인할 수 있습니다.</p></div></section>
+
+          <section class="panel"><div class="panel-heading"><h2>가상 복구·결과 확인</h2><span v-if="activeResult?.recovery" class="badge" :class="activeResult.recoveryStatus === 'done' ? 'success' : 'neutral'">{{ activeResult.recoveryStatus === 'done' ? '복구 확인' : '실행·확인' }}</span></div><div class="card-body recovery-body"><template v-if="activeResult?.recovery"><div class="recovery-target">{{ activeResult.recovery.device_name }} · {{ activeResult.recovery.device_id }}</div><p>수집 모듈을 재시작한 뒤 새 데이터가 수신되는지 확인합니다.</p><button class="primary recovery-button" type="button" @click="onRecover(activeResult)" :disabled="sending || recovering !== null || activeResult.recoveryStatus !== 'ready'" :aria-busy="activeResult.recoveryStatus === 'running'">{{ recoveryButtonLabel(activeResult) }}</button><div v-if="activeResult.recoveryFeedback" class="recovery-feedback" :class="activeResult.recoveryStatus" role="status" aria-live="polite">{{ activeResult.recoveryFeedback }}</div><dl v-if="activeResult.recoveryResult?.before && activeResult.recoveryResult?.after" class="recovery-metrics"><dt>마지막 수신 이후</dt><dd>{{ activeResult.recoveryResult.before.telemetry_age_seconds }}초 → {{ activeResult.recoveryResult.after.telemetry_age_seconds }}초</dd><dt>새 데이터 수신 번호</dt><dd>{{ activeResult.recoveryResult.before.telemetry_sequence }} → {{ activeResult.recoveryResult.after.telemetry_sequence }}</dd></dl></template><p v-else class="empty-card">장치를 점검하면 실행 가능한 경우에만 복구 버튼이 나타납니다. 정상·절전·통신 불가 장치에는 실행하지 않습니다.</p></div></section>
+        </aside>
+      </div>
+    </section>
+  </main>
+
+  <section class="panel history-panel" aria-labelledby="history-title"><div class="panel-heading"><div><h2 id="history-title">유지보수 이력</h2><small>진단·조치·복구 결과를 확인합니다.</small></div><div class="history-actions"><div class="segmented" aria-label="기록 범위"><button type="button" :class="{active:historyFilter === 'all'}" :aria-pressed="historyFilter === 'all'" @click="historyFilter = 'all'">전체</button><button type="button" :class="{active:historyFilter === 'selected'}" :aria-pressed="historyFilter === 'selected'" @click="historyFilter = 'selected'">선택 장치</button></div><button type="button" @click="loadMaintenance">이력 새로고침</button></div></div><div class="table-wrap"><table v-if="filteredHistory.length"><thead><tr><th scope="col">시간</th><th scope="col">장치</th><th scope="col">작업</th><th scope="col">결과</th><th scope="col">점검·조치 내용</th></tr></thead><tbody><tr v-for="record in filteredHistory" :key="record.id"><td class="history-time">{{ formatTime(record.updated_at) }}</td><td><span class="history-device">{{ record.device_id }}</span><div class="history-detail">{{ deviceName(record.device_id) }}</div></td><td>{{ record.kind === 'recovery' ? '가상 복구' : '장치 점검' }}</td><td><span class="badge" :class="statusTone(record.status)">{{ statusLabel(record.status) }}</span></td><td class="summary-cell">{{ record.summary }}<div v-if="record.kind === 'recovery' && record.evidence?.before" class="history-detail">수신 번호 {{ record.evidence.before.telemetry_sequence }} → {{ record.evidence.after?.telemetry_sequence ?? '확인 불가' }}</div></td></tr></tbody></table><p v-else class="table-empty">{{ historyFilter === 'selected' && historyLoaded ? '선택한 장치의 기록이 없습니다.' : historyMessage || '유지보수 기록을 불러오는 중입니다.' }}</p></div><p v-if="historyMessage && filteredHistory.length" class="card-note" style="padding:0 18px 12px" role="status">{{ historyMessage }}</p></section>
+  <footer class="footer-note">가상 IoT 장치 기반 데모 · 매뉴얼과 원인 후보는 추가 점검을 위한 안내입니다.</footer>
+</div>
+<noscript>이 화면은 JavaScript가 필요합니다. 브라우저에서 JavaScript를 활성화해 주세요.</noscript>
 <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
 <script>
-const { createApp, ref, reactive, nextTick } = Vue;
+
+const { createApp, ref, reactive, nextTick, computed } = Vue;
 
 const STEP_LABELS = {
   ManualSearchCompleted: e => `IoT 매뉴얼 검색 완료 · 관련 문단 ${e.count}개`,
@@ -230,17 +255,34 @@ createApp({
     const toolbarMessage = ref('가상 장치 시나리오');
     const maintenanceRecords = ref([]);
     const historyMessage = ref('');
+    const activeResultId = ref(null);
+    const historyFilter = ref('all');
+    const devicesLoaded = ref(false);
+    const historyLoaded = ref(false);
+    const deviceError = ref('');
+    const backendConnected = ref(false);
+    const refreshing = ref(false);
+    const invalidatedDevices = ref([]);
+    const streamStatus = ref('장치를 선택하고 질문해 주세요.');
+    const analysisEl = ref(null);
     const thread = 't-web-' + Math.random().toString(36).slice(2, 8);
     let nextId = 0;
 
-    fetch('/health').then(r => {
-      if (!r.ok) throw new Error('health check failed');
-      return r.json();
-    }).then(h => {
-      backendLabel.value = h.llm_backend === 'fake'
-        ? '가상 장치 · 데모 모드 / LLM 미사용'
-        : `가상 장치 · LLM 설명: ${h.llm_backend} (${h.quality_llm})`;
-    }).catch(() => { backendLabel.value = '백엔드 연결 확인 필요'; });
+    async function loadHealth() {
+      try {
+        const response = await fetch('/health');
+        if (!response.ok) throw new Error('health unavailable');
+        const health = await response.json();
+        backendConnected.value = true;
+        backendLabel.value = health.llm_backend === 'fake'
+          ? '데모 모드 · LLM 미사용'
+          : `${health.llm_backend || '모델'} · ${health.quality_llm || '모델 설정 확인'}`;
+      } catch {
+        backendConnected.value = false;
+        backendLabel.value = '서버 연결을 확인해 주세요';
+      }
+    }
+    loadHealth();
 
     function statusLabel(status) {
       return {normal: '정상', open: '점검 필요', resolved: '복구 확인', needs_visit: '현장 점검 필요', verification_pending: '복구 확인 불가'}[status] || status;
@@ -249,7 +291,10 @@ createApp({
       try {
         const response = await fetch('/api/maintenance');
         if (!response.ok) throw new Error('history unavailable');
-        maintenanceRecords.value = (await response.json()).records || [];
+        const payload = await response.json();
+        if (!Array.isArray(payload.records)) throw new Error('invalid records');
+        maintenanceRecords.value = payload.records;
+        historyLoaded.value = true;
         historyMessage.value = maintenanceRecords.value.length ? '' : '아직 점검 기록이 없습니다.';
       } catch { historyMessage.value = '유지보수 기록을 불러오지 못했습니다.'; }
     }
@@ -257,16 +302,115 @@ createApp({
       try {
         const response = await fetch('/api/devices');
         if (!response.ok) throw new Error('devices unavailable');
-        deviceList.value = (await response.json()).devices || [];
-      } catch { toolbarMessage.value = '장치 목록 조회 실패 · ID로 점검할 수 있습니다.'; }
+        const payload = await response.json();
+        if (!Array.isArray(payload.devices)) throw new Error('invalid devices');
+        deviceList.value = payload.devices;
+        devicesLoaded.value = true;
+        deviceError.value = '';
+        if (deviceList.value.length && !deviceList.value.some(d => d.device_id === selectedDevice.value)) selectedDevice.value = deviceList.value[0].device_id;
+      } catch { deviceError.value = '장치 목록을 불러오지 못했습니다. 새로고침하거나 ID로 질문해 주세요.'; }
     }
+    function deviceName(id) {
+      return deviceList.value.find(device => device.device_id === id)?.name || id || '장치를 선택해 주세요';
+    }
+    function statusTone(status) {
+      return {normal: 'success', resolved: 'success', open: 'warning', needs_visit: 'danger', verification_pending: 'warning'}[status] || 'neutral';
+    }
+    function formatTime(value) {
+      if (!value) return '시간 정보 없음';
+      const time = new Date(value);
+      return Number.isNaN(time.getTime()) ? '시간 정보 없음' : time.toLocaleString('ko-KR', {month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', hour12: false});
+    }
+    function latestRecord(id) {
+      return maintenanceRecords.value.find(record => record.device_id === id) || null;
+    }
+    function deviceState(id) {
+      if (invalidatedDevices.value.includes(id)) return '재점검 필요';
+      const record = latestRecord(id);
+      return record ? statusLabel(record.status) : '점검 전';
+    }
+    function deviceTone(id) {
+      if (invalidatedDevices.value.includes(id)) return 'neutral';
+      return statusTone(latestRecord(id)?.status);
+    }
+    function chooseDevice(id) {
+      if (sending.value || recovering.value !== null) return;
+      selectedDevice.value = id;
+      const result = [...log.value].reverse().find(item => item.kind === 'agent' && item.deviceId === id && (item.sources?.length || item.recovery || item.metadata?.route === 'diagnose'));
+      activeResultId.value = result?.id ?? null;
+    }
+    function viewResult(item) {
+      if (sending.value || recovering.value !== null) return;
+      if (item.deviceId && deviceList.value.some(device => device.device_id === item.deviceId)) selectedDevice.value = item.deviceId;
+      activeResultId.value = item.id;
+      nextTick(() => analysisEl.value?.scrollIntoView?.({behavior: 'smooth', block: 'nearest'}));
+    }
+    function sendPrompt(text) {
+      if (sending.value || recovering.value !== null) return;
+      input.value = text;
+      onSubmit();
+    }
+    async function refreshAll() {
+      if (refreshing.value) return;
+      refreshing.value = true;
+      try { await Promise.allSettled([loadHealth(), loadDevices(), loadMaintenance()]); }
+      finally { refreshing.value = false; }
+    }
+    const activeResult = computed(() => {
+      const item = log.value.find(item => item.id === activeResultId.value && item.kind === 'agent');
+      if (!item || (item.deviceId && item.deviceId !== selectedDevice.value) || (item.deviceId && invalidatedDevices.value.includes(item.deviceId))) return null;
+      return item;
+    });
+    const manualSources = computed(() => activeResult.value?.sources || []);
+    const candidateList = computed(() => {
+      const result = activeResult.value;
+      if (!result) return [];
+      const candidates = [], seen = new Set();
+      for (const source of result.sources || []) {
+        for (const cause of source.causes || []) {
+          const sourceId = cause.source_id || source.source_id;
+          // 후보 표시는 서버가 최종 답변에 명시한 항목만 사용한다. 문장으로 명령을 실행하지 않는다.
+          if (!seen.has(cause.id) && result.text.includes(`- ${cause.title} [${sourceId}]`)) {
+            candidates.push({...cause, sourceId});
+            seen.add(cause.id);
+          }
+        }
+      }
+      return candidates;
+    });
+    const snapshot = computed(() => {
+      if (invalidatedDevices.value.includes(selectedDevice.value)) return null;
+      const record = latestRecord(selectedDevice.value);
+      const result = activeResult.value;
+      const local = result?.recoveryResult;
+      const recordedLater = record && Date.parse(record.updated_at) > Date.parse(result?.recoveredAt);
+      if (local && local.device_id === selectedDevice.value && !recordedLater) {
+        return {data: local.after || null, status: result.recoveryStatus === 'done' ? 'resolved' : result.recoveryStatus === 'failed' ? 'needs_visit' : 'verification_pending', time: result.recoveredAt};
+      }
+      if (!record) return null;
+      return {data: record.kind === 'recovery' ? record.evidence?.after || null : record.evidence?.data || null,
+              status: record.status, time: record.updated_at};
+    });
+    const filteredHistory = computed(() => historyFilter.value === 'selected'
+      ? maintenanceRecords.value.filter(record => record.device_id === selectedDevice.value) : maintenanceRecords.value);
+    const confirmedRecoveries = computed(() => maintenanceRecords.value.filter(record => record.kind === 'recovery' && record.status === 'resolved').length);
+    const followupRecords = computed(() => maintenanceRecords.value.filter(record => ['needs_visit', 'verification_pending'].includes(record.status)).length);
+    const qualityLabel = computed(() => {
+      const qa = activeResult.value?.metadata?.qa;
+      return qa?.passed === true ? '출처·조치 검수 통과' : qa?.passed === false ? '검수 미달 · 대체 안내' : activeResult.value ? '조회·규칙 기반 안내' : '점검 대기';
+    });
+    const qualityTone = computed(() => activeResult.value?.metadata?.qa?.passed === true ? 'success'
+      : activeResult.value?.metadata?.qa?.passed === false ? 'warning' : 'neutral');
+
     function inspectSelected() {
+      if (sending.value || recovering.value !== null) return;
       input.value = selectedDevice.value + ' 점검해줘';
       onSubmit();
     }
     async function resetSelected() {
       if (sending.value || recovering.value !== null) return;
       recovering.value = selectedDevice.value;
+      invalidatedDevices.value = [...new Set([...invalidatedDevices.value, selectedDevice.value])];
       try {
         const response = await fetch('/api/scenario/reset', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({device_id: selectedDevice.value})});
         if (!response.ok) throw new Error('reset failed');
@@ -334,6 +478,7 @@ createApp({
           throw new Error('recovery target mismatch');
         }
         item.recoveryResult = data;
+        item.recoveredAt = new Date().toISOString();
         if (data.recovery_verified === true && data.before && data.after) {
           item.recoveryStatus = 'done';
           item.recoveryFeedback = '새 데이터 수신과 정상 상태가 확인됐습니다.';
@@ -369,12 +514,16 @@ createApp({
       const text = input.value.trim();
       if (!text || sending.value || recovering.value !== null) return;
 
+      const ids = [...text.toLowerCase().matchAll(/(?:^|[^A-Za-z0-9_])(sensor-\d+)(?![A-Za-z0-9_-])/g)].map(match => match[1]);
+      const requestDeviceId = new Set(ids).size === 1 ? ids[0] : null;
+      if (requestDeviceId && deviceList.value.some(device => device.device_id === requestDeviceId)) selectedDevice.value = requestDeviceId;
+      streamStatus.value = '상태와 관련 근거를 확인하고 있습니다.';
       log.value.push({ id: nextId++, kind: 'user', text });
       input.value = '';
       sending.value = true;
       scrollToBottom();
 
-      const stepsItem = reactive({ id: nextId++, kind: 'steps', steps: [] });
+      const stepsItem = reactive({ id: nextId++, kind: 'steps', steps: [], done: false });
       log.value.push(stepsItem);
       scrollToBottom();
 
@@ -407,7 +556,16 @@ createApp({
             log.value.push(streamItem);
           }
           streamItem.text = e.reply;
-          streamItem.sources = e.sources || [];
+          streamItem.sources = Array.isArray(e.sources) ? e.sources : [];
+          streamItem.metadata = e.metadata || {};
+          streamItem.deviceId = e.recovery?.device_id || requestDeviceId;
+          streamItem.receivedAt = new Date().toISOString();
+          stepsItem.done = true;
+          streamStatus.value = '답변을 확인해 주세요.';
+          if (streamItem.sources.length || e.recovery || e.metadata?.route === 'diagnose') {
+            activeResultId.value = streamItem.id;
+            if (streamItem.deviceId) invalidatedDevices.value = invalidatedDevices.value.filter(id => id !== streamItem.deviceId);
+          }
           loadMaintenance();
           if (e.recovery?.action === 'restart_collection'
               && typeof e.recovery.device_id === 'string') {
@@ -426,12 +584,14 @@ createApp({
         const label = fn(e);
         if (!label) return;
         stepsItem.steps.push(label);
+        streamStatus.value = label;
         scrollToBottom();
       };
 
       es.onerror = () => {
         es.close();
         sending.value = false;
+        streamStatus.value = '응답이 중단됐습니다. 다시 질문해 주세요.';
         if (!receivedFinal) {
           log.value.push({ id: nextId++, kind: 'agent',
             text: '점검 결과를 받지 못했습니다. 백엔드 연결 상태를 확인한 뒤 다시 점검해 주세요.' });
@@ -443,9 +603,14 @@ createApp({
     return { backendLabel, log, input, sending, recovering, logEl,
       deviceList, selectedDevice, toolbarMessage, maintenanceRecords, historyMessage,
       inspectSelected, resetSelected, loadMaintenance, statusLabel,
+      activeResult, manualSources, candidateList, snapshot, historyFilter, filteredHistory,
+      devicesLoaded, historyLoaded, deviceError, backendConnected, refreshing, streamStatus, analysisEl,
+      confirmedRecoveries, followupRecords, qualityLabel, qualityTone,
+      deviceName, deviceState, deviceTone, statusTone, formatTime, chooseDevice, viewResult, sendPrompt, refreshAll,
       onSubmit, onRecover, recoveryButtonLabel };
   },
 }).mount('#app');
+
 </script>
 </body>
 </html>
