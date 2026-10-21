@@ -6,10 +6,12 @@ from langgraph.config import get_stream_writer
 from .device_rules import assess_device
 from .iot_llm import ExplanationError, render_explanation
 from .answer_quality import check_answer
+from .query_router import route_query, HELP
 
 
 class IoTState(TypedDict, total=False):
     query: str
+    route: str
     device_id: str
     result: dict
     assessment: dict
@@ -30,13 +32,60 @@ class IoTState(TypedDict, total=False):
 
 def build_graph(deps):
     async def inspect_device(state):
-        ids = list(dict.fromkeys(re.findall(r"\bsensor-\d+\b", state["query"].lower())))
-        if len(ids) != 1:
-            return {"final": "점검할 장치 ID 하나를 알려주세요. 예: sensor-02"}
+        route, ids = route_query(state["query"])
+        if route == "clarify":
+            return {"route": route, "answer_source": "clarification", "final": "점검할 장치 ID 하나를 알려주세요. 예: sensor-02"}
+        if route == "help":
+            return {"route": route, "answer_source": "service_help", "final": HELP}
+        if route in ("list_devices", "device_info"):
+            listing = await deps.mcp.call_tool("list_devices", {})
+            devices = listing.get("devices", [])
+            if route == "list_devices":
+                return {"route": route, "answer_source": "device_registry", "final": "등록된 가상 IoT 장치:\n" + "\n".join(f"- {d['device_id']}: {d['name']}" for d in devices)}
+            device = next((d for d in devices if d["device_id"] == ids[0]), None)
+            if device is None:
+                return {"route": route, "final": f"{ids[0]}: 등록되지 않은 장치입니다."}
+            answer = f"{ids[0]}는 '{device['name']}'로 등록된 가상 IoT 장치예요."
+            if "어디" in state["query"]:
+                answer += "\n구체적인 설치 위치는 별도 등록되어 있지 않아 이름 이상의 위치를 확정할 수 없어요."
+            answer += f"\n현재 상태는 '{ids[0]} 점검해줘', 배터리는 '{ids[0]} 배터리 얼마나 남았어?'라고 물어보세요."
+            return {"route": route, "device_id": ids[0], "answer_source": "device_registry", "final": answer}
+        if route == "history":
+            listing = await deps.mcp.call_tool("list_devices", {})
+            if ids[0] not in {d["device_id"] for d in listing.get("devices", [])}:
+                return {"route": route, "final": f"{ids[0]}: 등록되지 않은 장치입니다."}
+            result = await deps.mcp.call_tool("get_maintenance_history", {"device_id": ids[0], "limit": 5})
+            records = result.get("records", [])
+            labels = {"normal": "정상", "open": "점검 필요", "resolved": "복구 확인", "needs_visit": "현장 점검 필요", "verification_pending": "확인 불가"}
+            answer = f"{ids[0]}의 최근 유지보수 기록:\n" + ("\n".join(f"- {r['updated_at']} · {labels.get(r['status'], r['status'])}: {r['summary']}" for r in records) if records else "아직 저장된 기록이 없습니다.")
+            return {"route": route, "device_id": ids[0], "answer_source": "maintenance_history", "final": answer}
+        if route == "manual":
+            retrieval = await deps.mcp.call_tool("search_iot_manuals", {"query": state["query"], "top_k": 3})
+            docs = retrieval.get("documents", [])
+            answer = "매뉴얼에서 찾은 일반 점검 절차예요. 특정 장치의 현재 상태를 점검한 결과는 아닙니다."
+            if docs:
+                answer += "\n\n" + "\n\n".join(f"[{d['source_id']}] {d['title']} · {d['section']}\n{d['text']}" for d in docs)
+            else:
+                answer += "\n관련 근거를 찾지 못했습니다. 증상이나 질문을 더 구체적으로 알려주세요."
+            return {"route": route, "answer_source": "manual_search", "retrieval": retrieval, "final": answer}
         result = await deps.mcp.call_tool("get_device_status", {"device_id": ids[0]})
         if not result["ok"]:
-            return {"final": f"{ids[0]}: {result['error']}"}
-        return {"device_id": ids[0], "result": result, "assessment": assess_device(result["data"])}
+            return {"route": route, "final": f"{ids[0]}: {result['error']}"}
+        if route == "status":
+            data = result["data"]
+            query = state["query"]
+            lines = [f"{data['name']} ({ids[0]})"]
+            if "배터리" in query or "잔량" in query:
+                lines.append(f"배터리 잔량: {data.get('battery_pct', '미확인')}%")
+            elif "명령" in query or "기능" in query:
+                lines.append("등록된 지원 명령: " + (", ".join(data.get("supported_actions", [])) or "없음"))
+                lines.append("명령 지원 여부와 현재 실행 가능 여부는 다릅니다. 실행 가능 여부는 점검 후 확인하세요.")
+            elif "연결" in query:
+                lines.append("현재 연결 상태: " + ("연결됨" if data.get("connected") else "연결 끊김"))
+            else:
+                lines.append(f"설정된 전송 주기: {data.get('report_interval_seconds', '미확인')}초")
+            return {"route": route, "device_id": ids[0], "answer_source": "device_status", "final": "\n".join(lines)}
+        return {"route": route, "device_id": ids[0], "result": result, "assessment": assess_device(result["data"])}
 
     async def retrieve_evidence(state):
         if state.get("final"):

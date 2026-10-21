@@ -289,7 +289,7 @@ async def chat_stream(message: str, thread_id: str = "default"):
                 for node_name, delta in payload.items():
                     if not isinstance(delta, dict):
                         continue
-                    for key in ("device_id", "result", "assessment", "answer_source", "llm_usage", "llm_error", "retrieval", "qa", "attempts", "maintenance_id"):
+                    for key in ("route", "device_id", "result", "assessment", "answer_source", "llm_usage", "llm_error", "retrieval", "qa", "attempts", "maintenance_id"):
                         if key in delta:
                             inspection[key] = delta[key]
                     for ev in (delta.get("events") or [])[seen:]:
