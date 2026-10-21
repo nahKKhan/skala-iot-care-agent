@@ -13,7 +13,8 @@ const successful = {device_id: 'sensor-02', recovery_verified: true,
 const response = (payload, status = 200) => ({ok: status >= 200 && status < 300, status, json: async () => payload});
 
 function setup(recover, resetAll = async () => response({ok: true, count: 6,
-  device_ids: ['sensor-01', 'sensor-02', 'sensor-03', 'sensor-04', 'sensor-05', 'sensor-06']})) {
+  device_ids: ['sensor-01', 'sensor-02', 'sensor-03', 'sensor-04', 'sensor-05', 'sensor-06']}),
+  maintenance = async () => response({records: [{id: 'history-1', device_id: 'sensor-02', status: 'needs_visit', summary: '현장 점검 필요'}]})) {
   let state;
   const calls = [];
   const streams = [];
@@ -32,7 +33,7 @@ function setup(recover, resetAll = async () => response({ok: true, count: 6,
       calls.push({url, options});
       if (url === '/health') return response({llm_backend: 'fake'});
       if (url === '/api/devices') return response({devices: [{device_id: 'sensor-02', name: '실습실 온습도 센서'}]});
-      if (url === '/api/maintenance') return response({records: [{id: 'history-1', device_id: 'sensor-02', status: 'needs_visit', summary: '현장 점검 필요'}]});
+      if (url === '/api/maintenance') return maintenance(url, options);
       if (url === '/api/scenario/reset-all') return resetAll(url, options);
       if (url === '/api/scenario/reset') return response({ok: true});
       if (url === '/api/recover') return recover(url, options);
@@ -320,4 +321,69 @@ test('name-based answers select the server-resolved device even when no ID was t
   assert.equal(ui.state.selectedDevice.value, 'sensor-03');
   assert.equal(ui.state.log.value.at(-1).deviceId, 'sensor-03');
   assert.equal(posts(ui).length, 0);
+});
+
+
+test('failed refresh preserves records, distinguishes stale data, and clears on recovery', async () => {
+  let fail = false;
+  const record = {id: 'saved-1', device_id: 'sensor-02', status: 'open'};
+  const ui = setup(async () => response(successful), undefined,
+    async () => fail ? response({detail: 'offline'}, 503) : response({records: [record]}));
+  await ui.state.loadMaintenance();
+  const time = ui.state.historyUpdatedAt.value;
+  assert.equal(ui.state.historyMessage.value, '');
+  fail = true;
+  await ui.state.loadMaintenance();
+  assert.equal(ui.state.maintenanceRecords.value[0].id, 'saved-1');
+  assert.equal(ui.state.historyUpdatedAt.value, time);
+  assert.match(ui.state.historyMessage.value, /최신 기록.*갱신하지 못했습니다/);
+  assert.match(ui.state.historyMessage.value, /마지막으로 불러온 기록/);
+  assert.equal(ui.state.historyLoading.value, false);
+  fail = false;
+  await ui.state.loadMaintenance();
+  assert.equal(ui.state.historyMessage.value, '');
+  assert.equal(ui.state.historyLoaded.value, true);
+});
+
+test('an older failed request cannot overwrite a newer successful history refresh', async () => {
+  const pending = [];
+  const ui = setup(async () => response(successful), undefined,
+    () => new Promise(resolve => pending.push(resolve)));
+  const latest = ui.state.loadMaintenance();
+  pending[1](response({records: [{id: 'newest'}]}));
+  await latest;
+  pending[0](response({detail: 'old failure'}, 503));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(ui.state.maintenanceRecords.value[0].id, 'newest');
+  assert.equal(ui.state.historyMessage.value, '');
+  assert.equal(ui.state.historyLoading.value, false);
+});
+
+test('an older successful response cannot resurrect history after a newer empty result', async () => {
+  const pending = [];
+  const ui = setup(async () => response(successful), undefined,
+    () => new Promise(resolve => pending.push(resolve)));
+  const latest = ui.state.loadMaintenance();
+  pending[1](response({records: []}));
+  await latest;
+  pending[0](response({records: [{id: 'old'}]}));
+  await new Promise(resolve => setImmediate(resolve));
+  assert.equal(ui.state.maintenanceRecords.value.length, 0);
+  assert.equal(ui.state.historyLoaded.value, true);
+  assert.equal(ui.state.historyMessage.value, '');
+  assert.equal(ui.state.historyEmptyText.value, '아직 점검 기록이 없습니다.');
+});
+
+test('first-load errors stay visible with the selected-device filter and differ from empty results', async () => {
+  let fail = true;
+  const ui = setup(async () => response(successful), undefined,
+    async () => fail ? response({detail: 'offline'}, 503) : response({records: []}));
+  ui.state.historyFilter.value = 'selected';
+  await ui.state.loadMaintenance();
+  assert.equal(ui.state.historyLoaded.value, false);
+  assert.match(ui.state.historyEmptyText.value, /불러오지 못했습니다/);
+  fail = false;
+  await ui.state.loadMaintenance();
+  assert.equal(ui.state.historyEmptyText.value, '선택한 장치의 기록이 없습니다.');
+  assert.equal(ui.state.historyMessage.value, '');
 });

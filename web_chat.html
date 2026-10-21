@@ -218,7 +218,7 @@
     </section>
   </main>
 
-  <section class="panel history-panel" aria-labelledby="history-title"><div class="panel-heading"><div><h2 id="history-title">유지보수 이력</h2><small>진단·조치·복구 결과를 확인합니다.</small></div><div class="history-actions"><div class="segmented" aria-label="기록 범위"><button type="button" :class="{active:historyFilter === 'all'}" :aria-pressed="historyFilter === 'all'" @click="historyFilter = 'all'">전체</button><button type="button" :class="{active:historyFilter === 'selected'}" :aria-pressed="historyFilter === 'selected'" @click="historyFilter = 'selected'">선택 장치</button></div><button type="button" @click="loadMaintenance">이력 새로고침</button></div></div><div class="table-wrap"><table v-if="filteredHistory.length"><thead><tr><th scope="col">시간</th><th scope="col">장치</th><th scope="col">작업</th><th scope="col">결과</th><th scope="col">점검·조치 내용</th></tr></thead><tbody><tr v-for="record in filteredHistory" :key="record.id"><td class="history-time">{{ formatTime(record.updated_at) }}</td><td><span class="history-device">{{ record.device_id }}</span><div class="history-detail">{{ deviceName(record.device_id) }}</div></td><td>{{ record.kind === 'recovery' ? '가상 복구' : '장치 점검' }}</td><td><span class="badge" :class="statusTone(record.status)">{{ statusLabel(record.status) }}</span></td><td class="summary-cell">{{ record.summary }}<div v-if="record.kind === 'recovery' && record.evidence?.before" class="history-detail">수신 번호 {{ record.evidence.before.telemetry_sequence }} → {{ record.evidence.after?.telemetry_sequence ?? '확인 불가' }}</div></td></tr></tbody></table><p v-else class="table-empty">{{ historyFilter === 'selected' && historyLoaded ? '선택한 장치의 기록이 없습니다.' : historyMessage || '유지보수 기록을 불러오는 중입니다.' }}</p></div><p v-if="historyMessage && filteredHistory.length" class="card-note" style="padding:0 18px 12px" role="status">{{ historyMessage }}</p></section>
+  <section class="panel history-panel" aria-labelledby="history-title"><div class="panel-heading"><div><h2 id="history-title">유지보수 이력</h2><small>{{ historyLoading ? '최신 기록을 조회하고 있습니다…' : historyUpdatedAt ? '마지막 조회 · ' + formatTime(historyUpdatedAt) : '진단·조치·복구 결과를 확인합니다.' }}</small></div><div class="history-actions"><div class="segmented" aria-label="기록 범위"><button type="button" :class="{active:historyFilter === 'all'}" :aria-pressed="historyFilter === 'all'" @click="historyFilter = 'all'">전체</button><button type="button" :class="{active:historyFilter === 'selected'}" :aria-pressed="historyFilter === 'selected'" @click="historyFilter = 'selected'">선택 장치</button></div><button type="button" @click="loadMaintenance" :disabled="historyLoading">{{ historyLoading ? '조회 중…' : '이력 새로고침' }}</button></div></div><div class="table-wrap"><table v-if="filteredHistory.length"><thead><tr><th scope="col">시간</th><th scope="col">장치</th><th scope="col">작업</th><th scope="col">결과</th><th scope="col">점검·조치 내용</th></tr></thead><tbody><tr v-for="record in filteredHistory" :key="record.id"><td class="history-time">{{ formatTime(record.updated_at) }}</td><td><span class="history-device">{{ record.device_id }}</span><div class="history-detail">{{ deviceName(record.device_id) }}</div></td><td>{{ record.kind === 'recovery' ? '가상 복구' : '장치 점검' }}</td><td><span class="badge" :class="statusTone(record.status)">{{ statusLabel(record.status) }}</span></td><td class="summary-cell">{{ record.summary }}<div v-if="record.kind === 'recovery' && record.evidence?.before" class="history-detail">수신 번호 {{ record.evidence.before.telemetry_sequence }} → {{ record.evidence.after?.telemetry_sequence ?? '확인 불가' }}</div></td></tr></tbody></table><p v-else class="table-empty">{{ historyEmptyText }}</p></div><p v-if="historyMessage && historyLoaded" class="card-note" style="padding:0 18px 12px" role="status">{{ historyMessage }}</p></section>
   <footer class="footer-note">가상 IoT 장치 기반 데모 · 매뉴얼과 원인 후보는 추가 점검을 위한 안내입니다.</footer>
 </div>
 <noscript>이 화면은 JavaScript가 필요합니다. 브라우저에서 JavaScript를 활성화해 주세요.</noscript>
@@ -248,6 +248,9 @@ createApp({
     const toolbarMessage = ref('가상 장치 시나리오');
     const maintenanceRecords = ref([]);
     const historyMessage = ref('');
+    const historyLoading = ref(false);
+    const historyUpdatedAt = ref(null);
+    let historyRequestId = 0;
     const activeResultId = ref(null);
     const historyFilter = ref('all');
     const devicesLoaded = ref(false);
@@ -281,16 +284,33 @@ createApp({
       return {normal: '정상', open: '점검 필요', resolved: '복구 확인', needs_visit: '현장 점검 필요', verification_pending: '복구 확인 불가'}[status] || status;
     }
     async function loadMaintenance() {
+      const requestId = ++historyRequestId;
+      historyLoading.value = true;
+      historyMessage.value = '';
       try {
         const response = await fetch('/api/maintenance');
         if (!response.ok) throw new Error('history unavailable');
         const payload = await response.json();
         if (!Array.isArray(payload.records)) throw new Error('invalid records');
+        // 이전 요청이 늦게 끝나도 더 최근 요청의 기록·오류를 덮어쓰지 않는다.
+        if (requestId !== historyRequestId) return;
         maintenanceRecords.value = payload.records;
         historyLoaded.value = true;
-        historyMessage.value = maintenanceRecords.value.length ? '' : '아직 점검 기록이 없습니다.';
-      } catch { historyMessage.value = '유지보수 기록을 불러오지 못했습니다.'; }
+        historyUpdatedAt.value = new Date().toISOString();
+      } catch {
+        if (requestId !== historyRequestId) return;
+        historyMessage.value = historyLoaded.value
+          ? '최신 기록을 갱신하지 못했습니다. 마지막으로 불러온 기록을 표시하고 있습니다.'
+          : '유지보수 기록을 불러오지 못했습니다. 이력 새로고침으로 다시 시도해 주세요.';
+      } finally {
+        if (requestId === historyRequestId) historyLoading.value = false;
+      }
     }
+    const historyEmptyText = computed(() => {
+      if (!historyLoaded.value) return historyMessage.value || '유지보수 기록을 불러오는 중입니다.';
+      if (historyFilter.value === 'selected') return '선택한 장치의 기록이 없습니다.';
+      return '아직 점검 기록이 없습니다.';
+    });
     async function loadDevices() {
       try {
         const response = await fetch('/api/devices');
@@ -606,7 +626,7 @@ createApp({
     }
 
     return { backendLabel, log, input, sending, recovering, logEl,
-      deviceList, selectedDevice, toolbarMessage, maintenanceRecords, historyMessage,
+      deviceList, selectedDevice, toolbarMessage, maintenanceRecords, historyMessage, historyLoading, historyUpdatedAt, historyEmptyText,
       inspectSelected, resetSelected, resetAll, loadMaintenance, statusLabel,
       activeResult, manualSources, candidateList, snapshot, historyFilter, filteredHistory,
       devicesLoaded, historyLoaded, deviceError, backendConnected, refreshing, streamStatus, analysisEl,
