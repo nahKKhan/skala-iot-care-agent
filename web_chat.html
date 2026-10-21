@@ -25,11 +25,11 @@
   h3 { font-size:13px; }
   small,.muted { color:var(--muted); }
   .page { max-width:1580px; padding:26px 30px 34px; margin:auto; }
-  .topbar { display:flex; align-items:center; justify-content:space-between; gap:20px; margin-bottom:24px; }
+  .topbar { display:flex; flex-wrap:wrap; align-items:center; justify-content:space-between; gap:20px; margin-bottom:24px; }
   .brand { display:flex; gap:12px; align-items:center; }
   .brand-mark { width:40px; height:40px; border:1px solid #ccdcfa; background:var(--blue-soft); color:var(--blue); border-radius:11px; display:grid; place-items:center; font-size:24px; font-weight:600; }
   .subtitle { color:var(--muted); margin-top:2px; font-size:13px; }
-  .top-actions { display:flex; align-items:center; gap:14px; }
+  .top-actions { display:flex; flex-wrap:wrap; justify-content:flex-end; align-items:center; gap:14px; }
   .connection { font-size:12px; text-align:right; }
   .connection .dot { display:inline-block; width:7px; height:7px; background:#a1adbd; border-radius:50%; margin-right:5px; }
   .connection .dot.connected { background:var(--green); }
@@ -82,8 +82,6 @@
   .steps .step { margin:3px 0; }
   .steps .step::before { content:'· '; }
   .steps.done .step::before { content:'✓ '; color:var(--green); }
-  .prompt-box { font-size:11px; color:var(--muted); }
-  .prompt-box pre { max-height:230px; overflow:auto; white-space:pre-wrap; padding:12px; background:#f6f8fa; }
   .chat-bottom { padding:12px 16px 16px; border-top:1px solid var(--line); }
   .quick-actions { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px; }
   .quick-actions button { font-weight:400; padding:5px 8px; font-size:11px; color:var(--muted); }
@@ -158,6 +156,7 @@
     <div class="brand"><div class="brand-mark" aria-hidden="true">+</div><div><h1>IoT Care</h1><p class="subtitle">장치 점검부터 복구 확인, 유지보수 기록까지</p></div></div>
     <div class="top-actions">
       <div class="connection"><span class="dot" :class="{connected: backendConnected}"></span>{{ backendConnected ? '서버 연결됨' : '서버 연결 확인' }}<small>모델 설정 · {{ backendLabel }}</small></div>
+      <button type="button" @click="resetAll" :disabled="sending || recovering !== null">{{ recovering === '__all__' ? '전체 초기화 중…' : '전체 상태 초기화' }}</button>
       <button type="button" @click="refreshAll" :disabled="refreshing">{{ refreshing ? '조회 중…' : '새로고침' }}</button>
     </div>
   </header>
@@ -186,7 +185,7 @@
     <section class="workspace" aria-labelledby="workspace-title">
       <div class="workspace-heading">
         <div><h2 id="workspace-title">{{ deviceName(selectedDevice) }}</h2><p class="device-id">{{ selectedDevice }} · 가상 장치</p></div>
-        <div class="workspace-actions"><button class="primary" type="button" @click="inspectSelected" :disabled="sending || recovering !== null">{{ sending ? '응답 생성 중…' : '장치 점검 시작' }}</button><button type="button" @click="resetSelected" :disabled="sending || recovering !== null">가상 상태 초기화</button></div>
+        <div class="workspace-actions"><button class="primary" type="button" @click="inspectSelected" :disabled="sending || recovering !== null">{{ sending ? '응답 생성 중…' : '장치 점검 시작' }}</button><button type="button" @click="resetSelected" :disabled="sending || recovering !== null">선택 장치 초기화</button></div>
       </div>
       <p class="notice" role="status" aria-live="polite">{{ toolbarMessage === '가상 장치 시나리오' ? '장치를 점검하면 원인 후보와 매뉴얼 근거, 복구 가능 여부가 표시됩니다.' : toolbarMessage }}</p>
       <div class="workbench">
@@ -198,7 +197,6 @@
               <div v-if="item.kind === 'user'" class="row user"><span class="message-role">나</span><div class="bubble">{{ item.text }}</div></div>
               <div v-else-if="item.kind === 'steps' && item.steps.length" class="steps" :class="{done:item.done}"><div v-for="(step,i) in item.steps" :key="i" class="step">{{ step }}</div></div>
               <div v-else-if="item.kind === 'agent'" class="row agent"><span class="message-role">IoT Care</span><div class="bubble">{{ item.text }}</div><div class="bubble-actions"><button v-if="item.sources?.length || item.recovery || item.deviceLogs" type="button" class="text-button" @click="viewResult(item)">근거·점검 결과 보기 →</button><span v-if="item.receivedAt" class="message-footnote">{{ formatTime(item.receivedAt) }}</span></div></div>
-              <details v-else-if="item.kind === 'prompt'" class="prompt-box"><summary>요청에 사용한 근거 보기</summary><pre>{{ item.text }}</pre></details>
             </template>
             <div v-if="sending" class="loading-line" role="status"><span class="spinner" aria-hidden="true"></span>{{ streamStatus }}</div>
           </div>
@@ -234,15 +232,7 @@ const STEP_LABELS = {
   ManualSearchCompleted: e => `IoT 매뉴얼 검색 완료 · 관련 문단 ${e.count}개`,
   AnswerQualityChecked: e => e.passed ? '출처·원인 후보·조치 정책 검수 통과' : `답변 검수 미달 · ${e.attempt < 2 ? '한 번 재작성합니다' : '확인된 사실로 안내합니다'}`,
   DeviceExplanationStarted: () => '장치 상태·점검 결과·매뉴얼을 바탕으로 LLM이 설명을 작성하고 있습니다.',
-  PlanCreated: e => `계획 수립: 할 일 ${e.task_count}가지${e.targets?.length ? ` (시스템: ${e.targets.join(', ')})` : ''}`,
-  GateApplied: e => e.removed_analysis_tasks ? `불필요한 작업 ${e.removed_analysis_tasks}건 제거` : null,
-  TaskCompleted: e => (e.source === 'monitoring'
-      ? `모니터링 지표 확인 (시스템: ${e.target})`
-      : `대응 매뉴얼(runbook) 조회 (장애유형: ${e.target})`) + (e.retries ? ' (재시도 성공)' : ''),
-  ReplanCheck: e => e.is_sufficient ? null : `정보 부족 → 장애유형 "${e.target}"로 추가 조사`,
-  DraftWritten: e => `답변 초안 작성 (시도 ${e.attempt})`,
-  Validation: e => e.verdict === '합격' ? '검수 통과' : '검수 반려 → 다시 작성',
-  Finalize: () => '최종 답변 완성',
+
 };
 
 createApp({
@@ -361,7 +351,7 @@ createApp({
     }
     const activeResult = computed(() => {
       const item = log.value.find(item => item.id === activeResultId.value && item.kind === 'agent');
-      if (!item || (item.deviceId && item.deviceId !== selectedDevice.value) || (item.deviceId && invalidatedDevices.value.includes(item.deviceId))) return null;
+      if (!item || item.scenarioInvalidated || (item.deviceId && item.deviceId !== selectedDevice.value) || (item.deviceId && invalidatedDevices.value.includes(item.deviceId) && item.metadata?.route !== 'logs')) return null;
       return item;
     });
     const manualSources = computed(() => activeResult.value?.sources || []);
@@ -410,21 +400,49 @@ createApp({
       input.value = selectedDevice.value + ' 점검해줘';
       onSubmit();
     }
-    async function resetSelected() {
-      if (sending.value || recovering.value !== null) return;
-      recovering.value = selectedDevice.value;
-      invalidatedDevices.value = [...new Set([...invalidatedDevices.value, selectedDevice.value])];
-      try {
-        const response = await fetch('/api/scenario/reset', {method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({device_id: selectedDevice.value})});
-        if (!response.ok) throw new Error('reset failed');
-        for (const item of log.value) {
-          if (item.recovery?.device_id === selectedDevice.value && item.recoveryStatus === 'ready') item.recoveryStatus = 'superseded';
-        }
-        toolbarMessage.value = '가상 상태를 초기화했습니다. 유지보수 기록은 보존됩니다.';
-        await loadDevices();
-      } catch { toolbarMessage.value = '초기화 결과를 확인하지 못했습니다. 다시 점검해 주세요.'; }
-      finally { recovering.value = null; }
+    function knownDeviceIds() {
+      return [...new Set([selectedDevice.value, ...deviceList.value.map(d => d.device_id),
+        ...maintenanceRecords.value.map(r => r.device_id),
+        ...log.value.flatMap(item => [item.deviceId, item.recovery?.device_id])].filter(Boolean))];
     }
+    function invalidateScenarios(ids) {
+      invalidatedDevices.value = [...new Set([...invalidatedDevices.value, ...ids])];
+      for (const item of log.value) {
+        if (ids.includes(item.deviceId) || ids.includes(item.recovery?.device_id)) {
+          item.scenarioInvalidated = true;
+          if (item.recoveryStatus === 'ready') item.recoveryStatus = 'superseded';
+          if (activeResultId.value === item.id) activeResultId.value = null;
+        }
+      }
+    }
+    async function resetScenarios(all) {
+      if (sending.value || recovering.value !== null) return;
+      const deviceId = selectedDevice.value;
+      recovering.value = all ? '__all__' : deviceId;
+      invalidateScenarios(all ? knownDeviceIds() : [deviceId]);
+      if (all) activeResultId.value = null;
+      try {
+        const response = await fetch(all ? '/api/scenario/reset-all' : '/api/scenario/reset', {
+          method: 'POST', ...(all ? {} : {headers: {'Content-Type': 'application/json'}, body: JSON.stringify({device_id: deviceId})})});
+        if (!response.ok) throw new Error('reset failed');
+        const payload = await response.json();
+        if (!payload.ok || (all && !Array.isArray(payload.device_ids))) throw new Error('invalid reset result');
+        if (all) invalidateScenarios(payload.device_ids);
+        toolbarMessage.value = all
+          ? `가상 장치 ${payload.device_ids.length}개를 전체 초기화했습니다. 유지보수 기록은 보존됩니다.`
+          : '선택 장치의 가상 상태를 초기화했습니다. 유지보수 기록은 보존됩니다.';
+      } catch {
+        toolbarMessage.value = '초기화 결과를 확인하지 못했습니다. 다시 점검해 주세요.';
+      } finally {
+        try { await loadDevices(); }
+        finally {
+          if (all) invalidateScenarios(knownDeviceIds());
+          recovering.value = null;
+        }
+      }
+    }
+    function resetSelected() { return resetScenarios(false); }
+    function resetAll() { return resetScenarios(true); }
     loadDevices();
     loadMaintenance();
 
@@ -532,8 +550,6 @@ createApp({
 
       const url = `/chat/stream?message=${encodeURIComponent(text)}&thread_id=${encodeURIComponent(thread)}`;
       const es = new EventSource(url);
-      let streamItem = null;
-      let streamAttempt = null;
       let receivedFinal = false;
 
       es.onmessage = (event) => {
@@ -541,34 +557,22 @@ createApp({
         let e;
         try { e = JSON.parse(event.data); } catch { return; }
 
-        if (e.type === 'AnswerToken') {
-          if (!streamItem || streamAttempt !== e.attempt) {
-            streamItem = reactive({ id: nextId++, kind: 'agent', text: '' });
-            log.value.push(streamItem);
-            streamAttempt = e.attempt;
-          }
-          streamItem.text += e.delta;
-          scrollToBottom();
-          return;
-        }
-
         if (e.type === 'FinalAnswer') {
           receivedFinal = true;
-          if (!streamItem) {
-            streamItem = reactive({ id: nextId++, kind: 'agent', text: '' });
-            log.value.push(streamItem);
-          }
+          const streamItem = reactive({ id: nextId++, kind: 'agent', text: '' });
+          log.value.push(streamItem);
           streamItem.text = e.reply;
           streamItem.sources = Array.isArray(e.sources) ? e.sources : [];
           streamItem.metadata = e.metadata || {};
           streamItem.deviceLogs = e.device_logs || null;
-          streamItem.deviceId = e.recovery?.device_id || requestDeviceId;
+          streamItem.deviceId = e.device_id || e.recovery?.device_id || requestDeviceId;
+          if (streamItem.deviceId && deviceList.value.some(device => device.device_id === streamItem.deviceId)) selectedDevice.value = streamItem.deviceId;
           streamItem.receivedAt = new Date().toISOString();
           stepsItem.done = true;
           streamStatus.value = '답변을 확인해 주세요.';
           if (streamItem.sources.length || e.recovery || ['diagnose', 'logs'].includes(e.metadata?.route)) {
             activeResultId.value = streamItem.id;
-            if (streamItem.deviceId) invalidatedDevices.value = invalidatedDevices.value.filter(id => id !== streamItem.deviceId);
+            if (streamItem.deviceId && (e.metadata?.route === 'diagnose' || e.recovery)) invalidatedDevices.value = invalidatedDevices.value.filter(id => id !== streamItem.deviceId);
           }
           loadMaintenance();
           if (e.recovery?.action === 'restart_collection'
@@ -576,9 +580,6 @@ createApp({
             streamItem.recovery = e.recovery;
             streamItem.recoveryStatus = 'ready';
           }
-          if (e.prompt) log.value.push({ id: nextId++, kind: 'prompt', text: e.prompt });
-          streamItem = null;
-          streamAttempt = null;
           scrollToBottom();
           return;
         }
@@ -606,7 +607,7 @@ createApp({
 
     return { backendLabel, log, input, sending, recovering, logEl,
       deviceList, selectedDevice, toolbarMessage, maintenanceRecords, historyMessage,
-      inspectSelected, resetSelected, loadMaintenance, statusLabel,
+      inspectSelected, resetSelected, resetAll, loadMaintenance, statusLabel,
       activeResult, manualSources, candidateList, snapshot, historyFilter, filteredHistory,
       devicesLoaded, historyLoaded, deviceError, backendConnected, refreshing, streamStatus, analysisEl,
       confirmedRecoveries, followupRecords, qualityLabel, qualityTone,

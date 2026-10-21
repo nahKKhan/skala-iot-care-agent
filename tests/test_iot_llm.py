@@ -102,7 +102,7 @@ class ExplanationTransportTests(unittest.IsolatedAsyncioTestCase):
         evidence = {"query": "sensor-02 왜 늦어?", "device_id": "sensor-02",
                     "data": {"telemetry_age_seconds": 600},
                     "assessment": {"issues": ["telemetry_delayed"]}, "runbook": "점검 매뉴얼"}
-        for model in (OpenAIQualityLLM("test", 0), OllamaQualityLLM("test", 0)):
+        for model in (OpenAIQualityLLM("test"), OllamaQualityLLM("test")):
             with patch("agent.iot_llm.request_explanation", new=AsyncMock(return_value=(ANSWER, USAGE))) as request:
                 await model.explain_device(**evidence)
                 sent = json.loads(request.await_args.kwargs["messages"][1]["content"])
@@ -117,7 +117,7 @@ class LLMChatIntegrationTests(unittest.TestCase):
         import server
         self.stack = ExitStack()
         self.addCleanup(self.stack.close)
-        self.stack.enter_context(patch.dict(os.environ, {"LLM_BACKEND": "openai", "SUPERVISOR_VERSION": "v2", "LANGCHAIN_TRACING_V2": "false", "LANGSMITH_TRACING": "false"}))
+        self.stack.enter_context(patch.dict(os.environ, {"LLM_BACKEND": "openai", "LANGCHAIN_TRACING_V2": "false", "LANGSMITH_TRACING": "false"}))
         folder = self.stack.enter_context(tempfile.TemporaryDirectory())
         original_store = server.SqliteSessionStore
         self.stack.enter_context(patch.object(server, "SqliteSessionStore", lambda: original_store(Path(folder) / "sessions.db")))

@@ -114,7 +114,7 @@ class IoTDepthAPITests(unittest.TestCase):
         self.server=server
         self.stack=ExitStack()
         self.addCleanup(self.stack.close)
-        self.stack.enter_context(patch.dict(os.environ,{"LLM_BACKEND":"fake","SUPERVISOR_VERSION":"v2","LANGCHAIN_TRACING_V2":"false","LANGSMITH_TRACING":"false"}))
+        self.stack.enter_context(patch.dict(os.environ,{"LLM_BACKEND":"fake","LANGCHAIN_TRACING_V2":"false","LANGSMITH_TRACING":"false"}))
         folder=self.stack.enter_context(tempfile.TemporaryDirectory())
         original=server.SqliteSessionStore
         self.stack.enter_context(patch.object(server,"SqliteSessionStore",lambda:original(Path(folder)/"test.db")))
@@ -187,3 +187,39 @@ class IoTDepthAPITests(unittest.TestCase):
         model.explain_device.assert_not_awaited()
         self.assertEqual(result["metadata"]["answer_source"],"rules_no_evidence")
         self.assertIn("검색 근거가 부족",result["reply"])
+
+
+    def test_bulk_reset_restores_every_device_and_preserves_history_and_request_ledger(self):
+        offers = {id: self.inspect(id)["recovery"] for id in ("sensor-02", "sensor-05", "sensor-06")}
+        payloads = {}
+        for id, offer in offers.items():
+            payloads[id] = {"device_id": id, "request_id": "bulk-"+id, "scenario_revision": offer["scenario_revision"], "expected_sequence": 0}
+            self.assertEqual(self.client.post("/api/recover", json=payloads[id]).status_code, 200)
+        before = self.client.get("/api/maintenance").json()["records"]
+        response = self.client.post("/api/scenario/reset-all")
+        self.assertEqual(response.status_code, 200, response.text)
+        result = response.json()
+        self.assertEqual(result["count"], 6)
+        seed = IoTSimulator()
+        self.assertEqual(set(result["device_ids"]), set(seed.seed))
+        self.assertEqual(self.client.get("/api/maintenance").json()["records"], before)
+        for id, offer in offers.items():
+            stale = self.client.post("/api/recover", json={**payloads[id], "request_id": "stale-"+id})
+            self.assertEqual(stale.status_code, 409)
+            self.assertIn("상태가 바뀌", stale.json()["detail"])
+        # 중복 요청 기록은 초기화하지 않는다. 이전 request_id는 재실행 없이 과거 결과를 반환한다.
+        self.assertTrue(self.client.post("/api/recover", json=payloads["sensor-02"]).json()["recovery_verified"])
+        for id in result["device_ids"]:
+            report = self.inspect(id)
+            records = self.client.get("/api/maintenance", params={"device_id": id}).json()["records"]
+            observation = next(record for record in records if record["id"] == report["metadata"]["maintenance_id"])["evidence"]
+            data = observation["data"]
+            for key, value in seed.seed[id].items():
+                self.assertEqual(data[key], value, (id, key))
+            self.assertEqual(data["telemetry_sequence"], 0)
+            self.assertEqual(data["recovery_attempts"], 0)
+            self.assertEqual(observation["device_logs"]["scenario_revision"], data["scenario_revision"])
+            if id in offers:
+                self.assertNotEqual(data["scenario_revision"], offers[id]["scenario_revision"])
+            if id == "sensor-06":
+                self.assertIsNotNone(report["recovery"])

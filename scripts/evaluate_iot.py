@@ -11,13 +11,13 @@ import time
 from datetime import datetime
 
 ROOT = Path(__file__).resolve().parent.parent
-PIPELINE_VERSION = hashlib.sha256(b"".join((ROOT / name).read_bytes() for name in ["agent/iot_graph.py", "agent/iot_llm.py", "agent/answer_quality.py", "agent/manual_search.py", "agent/device_rules.py"])).hexdigest()[:12]
+PIPELINE_VERSION = hashlib.sha256(b"".join((ROOT / name).read_bytes() for name in ["agent/iot_graph.py", "agent/iot_llm.py", "agent/answer_quality.py", "agent/manual_search.py", "agent/device_rules.py", "agent/deps.py", "agent/mcp_client.py", "mcp_server.py", "agent/iot_simulator.py", "agent/device_logs.py", "agent/openai_llm.py", "agent/ollama_llm.py"])).hexdigest()[:12]
 sys.path.insert(0, str(ROOT))
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 os.environ["LANGSMITH_TRACING"] = "false"
-from agent.deps import SupervisorDeps
+from agent.deps import IoTDeps
 from agent.iot_graph import build_graph
-from agent.fake_llm import QualityLLM
+from agent.fake_llm import RuleBasedLLM
 from agent.ollama_llm import OllamaQualityLLM
 from agent.mcp_client import MCPClient
 from agent.session_store import SqliteSessionStore
@@ -72,11 +72,11 @@ async def evaluate(args):
     results=[]
     with tempfile.TemporaryDirectory() as folder:
         store=SqliteSessionStore(Path(folder)/"evaluation.db")
-        mcp=MCPClient(flaky_first_tool_call=False,extra_env={"IOT_DB_PATH":str(store.db_path)})
+        mcp=MCPClient(extra_env={"IOT_DB_PATH":str(store.db_path)})
         await mcp.start()
         try:
-            model=OllamaQualityLLM(args.model,0) if args.backend=="ollama" else QualityLLM("rules-evaluation",0)
-            graph=build_graph(SupervisorDeps(None,model,mcp,store,"v2"))
+            model=OllamaQualityLLM(args.model) if args.backend=="ollama" else RuleBasedLLM("rules-evaluation")
+            graph=build_graph(IoTDeps(quality_llm=model,mcp=mcp,session_store=store))
             for case in cases:
                 start=time.monotonic()
                 result=await graph.ainvoke({"query":case["query"]})

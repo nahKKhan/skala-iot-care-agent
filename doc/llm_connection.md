@@ -2,9 +2,9 @@
 
 ## 동작
 
-`장치 ID 추출 → MCP 상태 조회 → 코드 판단 → RAG 매뉴얼 검색·이력 조회 → LLM 설명·후보 선택 → 검수 → 기록`
+`장치 ID 추출 → MCP 상태 조회 → 코드 판단 → 장치 로그·RAG 매뉴얼·이력 조회 → LLM 설명·후보 선택 → 검수 → 기록`
 
-- OpenAI·Ollama의 quality 모델이 실제로 호출된다. fast 모델은 이 IoT 흐름에서 호출하지 않는다.
+- OpenAI·Ollama의 설명 모델 하나를 호출한다. 상태와 질문 분류는 코드가 담당한다.
 - 상태, 배터리, 수신 시간은 코드가 그대로 표시하고, LLM은 의미·다음 점검·확인 한계를 설명한다.
 - 복구 버튼 표시, 명령 실행 조건, 새 데이터로 복구 확인은 기존 코드가 담당한다. 채팅으로 재시작을 요구해도 명령을 자동 실행하지 않는다.
 - 모델 응답은 JSON 스키마와 Pydantic으로 형식을 검사한 뒤 표시한다. 형식 검사는 설명 내용의 정확성까지 보장하지 않으므로 실제 원인은 추가 점검이 필요하다.
@@ -71,6 +71,6 @@ node --test tests/recovery_button_ui.test.cjs
 ```
 
 구현: `agent/iot_llm.py`(프롬프트·HTTP·형식 검사), `agent/iot_graph.py`(설명 노드),
-`agent/openai_llm.py`·`agent/ollama_llm.py`(기존 어댑터 확장).
+`agent/openai_llm.py`·`agent/ollama_llm.py`(IoT 설명 전용 어댑터).
 
 API 형식 참고: [OpenAI 공식 Structured Outputs 문서](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=chat).

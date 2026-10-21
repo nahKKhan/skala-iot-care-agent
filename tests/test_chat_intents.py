@@ -5,9 +5,9 @@ import tempfile
 import unittest
 from contextlib import ExitStack
 from pathlib import Path
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
-from agent.query_router import device_ids, route_query
+from agent.query_router import device_ids, route_query, find_named_devices
 
 
 class KoreanQueryTests(unittest.TestCase):
@@ -30,12 +30,31 @@ class KoreanQueryTests(unittest.TestCase):
                 self.assertEqual(route_query(query)[0],expected)
 
 
+    def test_registered_names_with_particles_and_exact_name_preference(self):
+        devices = [{"device_id": "sensor-03", "name": "복도 온습도 센서"},
+                   {"device_id": "sensor-07", "name": "복도 미세먼지 센서"},
+                   {"device_id": "sensor-02", "name": "실습실 온습도 센서"},
+                   {"device_id": "sensor-04", "name": "예약 절전 센서"}]
+        self.assertEqual([d["device_id"] for d in find_named_devices("복도를 관리하는 센서가 뭐가 있더라", devices)], ["sensor-03", "sensor-07"])
+        self.assertEqual([d["device_id"] for d in find_named_devices("복도온습도센서 점검해줘", devices)], ["sensor-03"])
+        self.assertEqual([d["device_id"] for d in find_named_devices("실습실 센서 배터리는?", devices)], ["sensor-02"])
+        self.assertEqual(find_named_devices("체육관 센서 뭐가 있어?", devices), [])
+        self.assertEqual(find_named_devices("정상 절전과 수신 지연은 어떻게 달라?", devices), [])
+
+    def test_name_resolution_keeps_action_intent_and_explicit_id_priority(self):
+        self.assertEqual(route_query("실습실 센서 배터리 얼마야?", resolved_ids=["sensor-02"])[0], "status")
+        self.assertEqual(route_query("복도를 관리하는 센서가 뭐가 있더라", resolved_ids=["sensor-03"])[0], "device_info")
+        self.assertEqual(route_query("실습실 센서 점검해줘", resolved_ids=["sensor-02"])[0], "diagnose")
+        self.assertEqual(route_query("복도 센서 로그 보여줘", resolved_ids=["sensor-03"])[0], "logs")
+        self.assertEqual(route_query("sensor-99 복도 센서 점검", resolved_ids=["sensor-03"])[1], ["sensor-99"])
+
+
 class ChatIntentAPITests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         import server
         cls.stack=ExitStack()
-        cls.stack.enter_context(patch.dict(os.environ,{"LLM_BACKEND":"fake","SUPERVISOR_VERSION":"v2","LANGCHAIN_TRACING_V2":"false","LANGSMITH_TRACING":"false"}))
+        cls.stack.enter_context(patch.dict(os.environ,{"LLM_BACKEND":"fake","SUPERVISOR_VERSION":"v1","LANGCHAIN_TRACING_V2":"false","LANGSMITH_TRACING":"false"}))
         folder=cls.stack.enter_context(tempfile.TemporaryDirectory())
         original=server.SqliteSessionStore
         cls.stack.enter_context(patch.object(server,"SqliteSessionStore",lambda:original(Path(folder)/"intents.db")))
@@ -87,3 +106,79 @@ class ChatIntentAPITests(unittest.TestCase):
         self.assertIn("실습실 온습도 센서",final["reply"])
         self.assertEqual(final["metadata"]["route"],"device_info")
         self.assertIsNone(final["recovery"])
+
+
+    def test_stale_legacy_setting_cannot_bypass_iot_graph(self):
+        health = self.client.get("/health").json()
+        self.assertEqual(health["pipeline"], "iot")
+        self.assertEqual(health["llm_backend"], "fake")
+        self.assertEqual(health["quality_llm"], "rules")
+        self.assertEqual(self.client.get("/health").json()["instance_id"], health["instance_id"])
+        self.assertEqual(set(self.client.app.state.deps.mcp.sessions), {"ops"})
+        result = self.chat("sensor-03 로그 보여줘")
+        self.assertEqual(result["metadata"]["route"], "logs")
+        self.assertEqual(result["metadata"]["pipeline"], "iot")
+        self.assertTrue(result["device_logs"]["ok"])
+        response = self.client.get("/chat/stream", params={"message": "sensor-03 로그 보여줘", "thread_id": "cleanup-sse"})
+        events = [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith("data: ") and line != "data: [DONE]"]
+        final = next(e for e in events if e["type"] == "FinalAnswer")
+        self.assertEqual(final["reply"], result["reply"])
+        self.assertEqual(final["device_logs"]["logs"], result["device_logs"]["logs"])
+        self.assertEqual(final["metadata"]["pipeline"], "iot")
+        stored = self.client.app.state.deps.session_store.conn.execute(
+            "SELECT role,content FROM messages WHERE thread_id=? ORDER BY rowid", ("cleanup-sse",)).fetchall()
+        self.assertEqual(stored, [("user", "sensor-03 로그 보여줘"), ("assistant", final["reply"])])
+
+
+    def test_name_lookup_is_registry_based_without_model_or_diagnosis(self):
+        model = AsyncMock()
+        before = self.client.get("/api/maintenance").json()["records"]
+        with patch.object(self.client.app.state.deps, "quality_llm", model):
+            result = self.chat("복도를 관리하는 센서가 뭐가 있더라")
+        self.assertEqual(result["device_id"], "sensor-03")
+        self.assertEqual(result["metadata"]["route"], "device_info")
+        self.assertIn("복도 온습도 센서", result["reply"])
+        self.assertIn("등록된 장치 이름을 기준", result["reply"])
+        self.assertIsNone(result["recovery"])
+        model.explain_device.assert_not_awaited()
+        self.assertEqual(self.client.get("/api/maintenance").json()["records"], before)
+        self.assertIn("찾지 못했습니다", self.chat("체육관을 관리하는 센서가 뭐가 있어?")["reply"])
+        self.assertEqual(self.chat("무엇을 할 수 있어?")["metadata"]["route"], "help")
+        unknown = self.chat("sensor-99 복도 센서 점검")
+        self.assertIn("등록되지 않은 장치", unknown["reply"])
+        self.assertIsNone(unknown["recovery"])
+
+    def test_named_status_logs_diagnosis_and_sse_keep_the_resolved_target(self):
+        self.assertEqual(self.chat("실습실 센서 배터리 얼마나 남았어?")["device_id"], "sensor-02")
+        logs = self.chat("복도 센서 로그 보여줘")
+        self.assertEqual(logs["device_logs"]["device_id"], "sensor-03")
+        diagnosis = self.chat("실습실 센서를 점검해줘")
+        self.assertEqual(diagnosis["metadata"]["route"], "diagnose")
+        self.assertEqual(diagnosis["recovery"]["device_id"], "sensor-02")
+        response = self.client.get("/chat/stream", params={"message": "복도를 관리하는 센서가 뭐가 있더라"})
+        events = [json.loads(line[6:]) for line in response.text.splitlines() if line.startswith("data: ") and line != "data: [DONE]"]
+        final = next(e for e in events if e["type"] == "FinalAnswer")
+        self.assertEqual(final["device_id"], "sensor-03")
+        self.assertEqual(final["metadata"]["route"], "device_info")
+        self.assertIsNone(final["recovery"])
+
+    def test_ambiguous_names_list_candidates_and_do_not_select_a_device_for_actions(self):
+        mcp = self.client.app.state.deps.mcp
+        original = mcp.call_tool
+        calls = []
+        async def call_tool(name, args, **kwargs):
+            calls.append(name)
+            if name == "list_devices":
+                return {"devices": [{"device_id": "sensor-03", "name": "복도 온습도 센서"},
+                                    {"device_id": "sensor-07", "name": "복도 미세먼지 센서"}]}
+            return await original(name, args, **kwargs)
+        with patch.object(mcp, "call_tool", side_effect=call_tool):
+            listing = self.chat("복도를 관리하는 센서가 뭐가 있더라")
+            self.assertEqual(listing["metadata"]["route"], "device_search")
+            self.assertIn("sensor-03", listing["reply"])
+            self.assertIn("sensor-07", listing["reply"])
+            ambiguous = self.chat("복도 센서 점검해줘")
+            self.assertEqual(ambiguous["metadata"]["route"], "clarify")
+            self.assertIn("하나를 골라", ambiguous["reply"])
+            self.assertIsNone(ambiguous["recovery"])
+        self.assertEqual(set(calls), {"list_devices"})

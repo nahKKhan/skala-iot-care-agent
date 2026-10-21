@@ -6,7 +6,7 @@ from langgraph.config import get_stream_writer
 from .device_rules import assess_device
 from .iot_llm import ExplanationError, render_explanation
 from .answer_quality import check_answer
-from .query_router import route_query, HELP
+from .query_router import route_query, device_ids, find_named_devices, is_device_discovery, HELP
 from .device_logs import format_device_logs
 
 
@@ -41,20 +41,48 @@ def build_graph(deps):
 
     async def inspect_device(state):
         route, ids = route_query(state["query"])
+        devices = None
+        matched_by_name = False
+        if not device_ids(state["query"]):
+            try:
+                listing = await deps.mcp.call_tool("list_devices", {})
+                devices = listing.get("devices", [])
+            except Exception:
+                if is_device_discovery(state["query"]) and re.search(r"센서|장치|설치|관리|담당", state["query"]):
+                    return {"route": "device_search", "answer_source": "device_registry",
+                            "final": "등록된 장치 목록을 조회하지 못했습니다. 잠시 후 다시 질문해 주세요."}
+            matches = find_named_devices(state["query"], devices or [])
+            if len(matches) > 1:
+                candidates = "\n".join(f"- {d['device_id']}: {d['name']}" for d in matches)
+                if is_device_discovery(state["query"]):
+                    return {"route": "device_search", "answer_source": "device_registry",
+                            "final": "등록된 이름에서 찾은 가상 장치입니다.\n" + candidates}
+                return {"route": "clarify", "answer_source": "clarification",
+                        "final": "이름이 일치하는 장치가 여러 개입니다. 점검할 장치 ID 하나를 골라주세요.\n" + candidates}
+            if len(matches) == 1:
+                ids = [matches[0]["device_id"]]
+                route, ids = route_query(state["query"], resolved_ids=ids)
+                matched_by_name = True
+            elif is_device_discovery(state["query"]) and route != "list_devices" and re.search(r"센서|장치|설치|관리|담당", state["query"]):
+                return {"route": "device_search", "answer_source": "device_registry",
+                        "final": "질문과 이름이 일치하는 등록 장치를 찾지 못했습니다. 장치 ID를 알려주거나 '등록된 장치 목록 보여줘'라고 물어보세요."}
         if route == "clarify":
             return {"route": route, "answer_source": "clarification", "final": "점검할 장치 ID 하나를 알려주세요. 예: sensor-02"}
         if route == "help":
             return {"route": route, "answer_source": "service_help", "final": HELP}
         if route in ("list_devices", "device_info"):
-            listing = await deps.mcp.call_tool("list_devices", {})
-            devices = listing.get("devices", [])
+            if devices is None:
+                listing = await deps.mcp.call_tool("list_devices", {})
+                devices = listing.get("devices", [])
             if route == "list_devices":
                 return {"route": route, "answer_source": "device_registry", "final": "등록된 가상 IoT 장치:\n" + "\n".join(f"- {d['device_id']}: {d['name']}" for d in devices)}
             device = next((d for d in devices if d["device_id"] == ids[0]), None)
             if device is None:
                 return {"route": route, "final": f"{ids[0]}: 등록되지 않은 장치입니다."}
             answer = f"{ids[0]}는 '{device['name']}'로 등록된 가상 IoT 장치예요."
-            if "어디" in state["query"]:
+            if matched_by_name:
+                answer += "\n등록된 장치 이름을 기준으로 찾았습니다. 구체적인 관리 구역은 별도 등록되어 있지 않습니다."
+            if "어디" in state["query"] and not matched_by_name:
                 answer += "\n구체적인 설치 위치는 별도 등록되어 있지 않아 이름 이상의 위치를 확정할 수 없어요."
             answer += f"\n현재 상태는 '{ids[0]} 점검해줘', 배터리는 '{ids[0]} 배터리 얼마나 남았어?'라고 물어보세요."
             return {"route": route, "device_id": ids[0], "answer_source": "device_registry", "final": answer}

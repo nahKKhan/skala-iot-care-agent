@@ -1,8 +1,4 @@
-"""Wave 12 — 프로세스 밖(SQLite 파일)에 두는 세션 저장소.
-
-서버가 재시작돼도(새 프로세스, 새 인스턴스) 같은 session.db 파일을 다시 열므로
-대화 이력이 유지된다. in-memory dict였다면 재시작 즉시 소실됐을 상태다.
-"""
+"""SQLite 대화·유지보수 기록과 복구 요청 중복 방지 저장소."""
 import sqlite3
 import json
 import hashlib
@@ -75,13 +71,6 @@ class SqliteSessionStore:
         with self.conn:
             self.conn.execute("UPDATE recovery_requests SET response=?,http_status=?,state='done' WHERE request_id=?",
                               (json.dumps(body, ensure_ascii=False), http_status, request_id))
-
-    def load(self, thread_id: str) -> list[dict]:
-        rows = self.conn.execute(
-            "SELECT role, content FROM messages WHERE thread_id=? ORDER BY rowid",
-            (thread_id,),
-        ).fetchall()
-        return [{"role": r, "content": c} for r, c in rows]
 
     def append(self, thread_id: str, role: str, content: str) -> None:
         self.conn.execute(

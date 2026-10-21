@@ -10,7 +10,7 @@
 
 1. 백엔드와 프런트엔드를 각각 종료 후 다시 실행한다.
 2. 브라우저를 새로고침하고 `sensor-02 점검해줘`를 입력한다.
-3. 답변 아래 **가상 복구 실행** 버튼을 누른다.
+3. 결과 카드의 **가상 복구 실행** 버튼을 누른다.
 4. **가상 복구 완료**, 수신 지연 `600초 → 0초`, 수신 번호 `0 → 1`을 확인한다.
 5. 다시 같은 장치를 점검하면 정상 안내가 나오고 새 복구 버튼은 표시되지 않는다.
 6. 정상 장치(sensor-01), 연결 끊김·배터리 부족 장치(sensor-03), 없는 장치(sensor-99)에는 복구 버튼이 나오지 않는다.
@@ -22,7 +22,7 @@
 프로젝트 폴더의 터미널 A:
 
 ```bash
-LLM_BACKEND=fake SUPERVISOR_VERSION=v2 LANGCHAIN_TRACING_V2=false LANGSMITH_TRACING=false .venv/bin/python server.py
+LLM_BACKEND=fake LANGCHAIN_TRACING_V2=false LANGSMITH_TRACING=false .venv/bin/python server.py
 ```
 
 터미널 B:
@@ -43,3 +43,10 @@ node --test tests/recovery_button_ui.test.cjs
 ```
 
 Node 검증은 실제 화면 스크립트를 격리한 상태에서 실행해 중복 클릭·실패·통신 오류 처리를 확인한다. 실제 브라우저 렌더링 검증과는 구분한다.
+
+
+## 전체 초기화
+
+화면 상단 **전체 상태 초기화**로 모든 가상 장치를 초기 관측 상태로 되돌린다. 초기 로그도 다시 구성되며 장치별 시나리오 버전이 갱신된다. 유지보수 이력·기존 복구 request_id 기록은 보존한다. 실행 전의 진단·복구 제안은 무효화하고, 다시 점검해야 새 복구 버튼이 나타난다.
+
+백엔드는 `POST /api/scenario/reset-all`에서 복구와 동일한 잠금을 사용해 MCP `reset_all_device_scenarios`를 한 번 호출한다. 화면은 초기화 중 중복 요청을 차단하고, 응답을 잃어도 자동 재시도하지 않는다.

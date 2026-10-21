@@ -19,11 +19,10 @@ async def main():
             if result["ok"]:
                 result["assessment"] = assess_device(result["data"])
 
-                if "telemetry_delayed" in result["assessment"]["issues"]:
-                    result["runbook"] = await client.read_resource(
-                        "runbook://incident-response/telemetry_delayed",
-                        server="ops"
-                    )
+                result["manuals"] = await client.call_tool("search_iot_manuals", {
+                    "query": " ".join(result["assessment"]["issues"]) or "healthy",
+                    "issues": result["assessment"]["issues"],
+                })
 
             print(json.dumps(result, ensure_ascii=False, indent=2))
     finally:

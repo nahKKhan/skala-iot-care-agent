@@ -12,7 +12,8 @@ const successful = {device_id: 'sensor-02', recovery_verified: true,
   after: {telemetry_age_seconds: 0, telemetry_sequence: 1}};
 const response = (payload, status = 200) => ({ok: status >= 200 && status < 300, status, json: async () => payload});
 
-function setup(recover) {
+function setup(recover, resetAll = async () => response({ok: true, count: 6,
+  device_ids: ['sensor-01', 'sensor-02', 'sensor-03', 'sensor-04', 'sensor-05', 'sensor-06']})) {
   let state;
   const calls = [];
   const streams = [];
@@ -32,6 +33,7 @@ function setup(recover) {
       if (url === '/health') return response({llm_backend: 'fake'});
       if (url === '/api/devices') return response({devices: [{device_id: 'sensor-02', name: '실습실 온습도 센서'}]});
       if (url === '/api/maintenance') return response({records: [{id: 'history-1', device_id: 'sensor-02', status: 'needs_visit', summary: '현장 점검 필요'}]});
+      if (url === '/api/scenario/reset-all') return resetAll(url, options);
       if (url === '/api/scenario/reset') return response({ok: true});
       if (url === '/api/recover') return recover(url, options);
       throw new Error('Unexpected URL: ' + url);
@@ -239,4 +241,83 @@ test('structured log results appear for the correct device without recovery cont
   assert.equal(posts(ui).length, 0);
   ui.state.chooseDevice('sensor-02');
   assert.equal(ui.state.activeResult.value, null);
+});
+
+
+test('bulk reset is one request, blocks overlapping operations, and invalidates all offers', async () => {
+  let finish;
+  const ui = setup(async () => response(successful), () => new Promise(resolve => { finish = resolve; }));
+  await ui.state.refreshAll();
+  const first = ui.inspect();
+  const other = ui.inspect({...offer, device_id: 'sensor-05'});
+  const history = ui.state.maintenanceRecords.value;
+  const pending = ui.state.resetAll();
+  assert.equal(ui.state.recovering.value, '__all__');
+  assert.equal(first.recoveryStatus, 'superseded');
+  assert.equal(other.recoveryStatus, 'superseded');
+  await ui.state.resetAll();
+  await ui.state.resetSelected();
+  await ui.state.onRecover(first);
+  const count = ui.state.log.value.length;
+  ui.state.input.value = 'sensor-01 점검해줘';
+  ui.state.onSubmit();
+  assert.equal(ui.state.log.value.length, count);
+  assert.equal(posts(ui).length, 0);
+  assert.equal(ui.calls.filter(call => call.url === '/api/scenario/reset-all').length, 1);
+  assert.equal(ui.calls.filter(call => call.url === '/api/scenario/reset').length, 0);
+  finish(response({ok: true, device_ids: ['sensor-01', 'sensor-02', 'sensor-03', 'sensor-04', 'sensor-05', 'sensor-06']}));
+  await pending;
+  assert.equal(ui.state.recovering.value, null);
+  assert.match(ui.state.toolbarMessage.value, /6개.*전체 초기화/);
+  assert.deepEqual(ui.state.maintenanceRecords.value, history);
+  for (const id of ['sensor-01', 'sensor-02', 'sensor-05', 'sensor-06']) {
+    assert.equal(ui.state.deviceState(id), '재점검 필요');
+  }
+  assert.equal(ui.state.activeResult.value, null);
+});
+
+test('a lost bulk reset response leaves old results invalid and never automatically retries', async () => {
+  const ui = setup(async () => response(successful), async () => { throw new Error('connection lost'); });
+  const item = ui.inspect();
+  await ui.state.resetAll();
+  assert.equal(ui.state.recovering.value, null);
+  assert.equal(item.recoveryStatus, 'superseded');
+  assert.equal(ui.state.activeResult.value, null);
+  assert.match(ui.state.toolbarMessage.value, /결과를 확인하지 못했습니다/);
+  await ui.state.onRecover(item);
+  assert.equal(posts(ui).length, 0);
+  assert.equal(ui.calls.filter(call => call.url === '/api/scenario/reset-all').length, 1);
+});
+
+test('fresh logs after reset do not revive pre-reset observations or historical recovery offers', async () => {
+  const ui = setup(async () => response(successful));
+  await ui.state.refreshAll();
+  ui.state.maintenanceRecords.value = [{device_id: 'sensor-02', kind: 'inspection', status: 'open',
+    evidence: {data: {telemetry_age_seconds: 600}}}];
+  const old = ui.inspect();
+  await ui.state.resetAll();
+  ui.state.input.value = 'sensor-02 로그 보여줘';
+  ui.state.onSubmit();
+  ui.streams.at(-1).emit({type: 'FinalAnswer', reply: '새 로그', metadata: {route: 'logs'},
+    device_logs: {ok: true, logs: [{id: 'new-event'}]}});
+  ui.streams.at(-1).emit('[DONE]');
+  assert.equal(ui.state.activeResult.value.deviceLogs.logs[0].id, 'new-event');
+  assert.equal(ui.state.snapshot.value, null);
+  ui.state.viewResult(old);
+  assert.equal(ui.state.activeResult.value, null);
+  assert.equal(old.recoveryStatus, 'superseded');
+});
+
+
+test('name-based answers select the server-resolved device even when no ID was typed', async () => {
+  const ui = setup(async () => response(successful));
+  await ui.state.refreshAll();
+  ui.state.deviceList.value.push({device_id: 'sensor-03', name: '복도 온습도 센서'});
+  ui.state.input.value = '복도를 관리하는 센서가 뭐가 있더라';
+  ui.state.onSubmit();
+  ui.streams.at(-1).emit({type: 'FinalAnswer', device_id: 'sensor-03', reply: '복도 온습도 센서', metadata: {route: 'device_info'}});
+  ui.streams.at(-1).emit('[DONE]');
+  assert.equal(ui.state.selectedDevice.value, 'sensor-03');
+  assert.equal(ui.state.log.value.at(-1).deviceId, 'sensor-03');
+  assert.equal(posts(ui).length, 0);
 });

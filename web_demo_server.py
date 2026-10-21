@@ -1,16 +1,7 @@
-"""web_demo_server.py — all_total_vue 에이전트와 브라우저 채팅창으로 대화해보는 데모.
+"""Vue 화면(:8600)과 IoT API(:8100)를 같은 출처에서 제공하는 프록시.
 
-web_chat.html이 바닐라 JS 대신 Vue 3(CDN 글로벌 빌드, 별도 빌드 단계 없음)로 되어
-있다는 점만 all_total과 다르다. server.py(8100, 기존 통합 테스트 서버)는 전혀
-건드리지 않는다. 이 스크립트는
-- web_chat.html 한 장을 같은 출처(origin)로 띄우고
-- /chat/stream 요청을 그대로 8100으로 중계(프록시)해서
-
-브라우저의 CORS 제약 없이 실제 에이전트와 대화할 수 있게 해주는 아주 얇은 레이어다.
-server.py는 평소처럼(fake/ollama/openai 아무 백엔드로나) 8100에 미리 띄워 놓아야 한다.
-
-실행:
-    python3 web_demo_server.py        # http://localhost:8600 에서 채팅 화면 오픈
+실행: .venv/bin/python web_demo_server.py
+백엔드는 bash sh/run_iot_agent.sh [ollama|openai|fake]로 별도 실행한다.
 """
 from pathlib import Path
 
@@ -95,6 +86,22 @@ async def proxy_reset(req: Request):
     async with httpx.AsyncClient(timeout=15) as client:
         response = await client.post(f"{BACKEND}/api/scenario/reset", content=await req.body(), headers={"content-type": "application/json"})
     return JSONResponse(response.json(), status_code=response.status_code)
+
+
+@app.post("/api/scenario/reset-all")
+async def proxy_reset_all():
+    try:
+        async with httpx.AsyncClient(timeout=15) as client:
+            response = await client.post(f"{BACKEND}/api/scenario/reset-all")
+    except httpx.TimeoutException:
+        return JSONResponse({"detail": "전체 초기화 응답 시간이 초과됐습니다. 재점검해 주세요."}, status_code=504)
+    except httpx.RequestError:
+        return JSONResponse({"detail": "전체 초기화 서버와 통신하지 못했습니다. 재점검해 주세요."}, status_code=503)
+    try:
+        payload = response.json()
+    except ValueError:
+        return JSONResponse({"detail": "전체 초기화 결과를 해석하지 못했습니다."}, status_code=502)
+    return JSONResponse(payload, status_code=response.status_code)
 
 
 @app.get("/chat/stream")

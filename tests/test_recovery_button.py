@@ -8,7 +8,6 @@ from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
 os.environ["LLM_BACKEND"] = "fake"
-os.environ["SUPERVISOR_VERSION"] = "v2"
 os.environ["LANGCHAIN_TRACING_V2"] = "false"
 os.environ["LANGSMITH_TRACING"] = "false"
 
@@ -109,6 +108,24 @@ class RecoveryProxyTests(unittest.TestCase):
                 self.assertIn("detail", result.json())
         result = self.call_proxy(response=httpx.Response(200, text="not JSON"))
         self.assertEqual(result.status_code, 502)
+
+
+    def test_bulk_reset_proxy_preserves_result_and_does_not_retry_on_timeout(self):
+        for error, status in ((None, 200), (httpx.ReadTimeout("lost reset response"), 504)):
+            upstream = AsyncMock()
+            upstream.post.return_value = httpx.Response(200, json={"ok": True, "count": 6, "device_ids": ["sensor-01"]})
+            upstream.post.side_effect = error
+            context = MagicMock()
+            context.__aenter__ = AsyncMock(return_value=upstream)
+            context.__aexit__ = AsyncMock(return_value=False)
+            with patch.object(web_demo_server.httpx, "AsyncClient", return_value=context):
+                with TestClient(web_demo_server.app) as client:
+                    result = client.post("/api/scenario/reset-all")
+            self.assertEqual(result.status_code, status)
+            self.assertEqual(upstream.post.await_count, 1)
+            self.assertEqual(upstream.post.await_args.args[0], "http://127.0.0.1:8100/api/scenario/reset-all")
+            if error is None:
+                self.assertEqual(result.json()["count"], 6)
 
 
 if __name__ == "__main__":

@@ -36,6 +36,13 @@ class IoTSimulator:
                              entry.get("details"), now + timedelta(seconds=entry["offset_seconds"]))
         return {"ok": True, "device_id": device_id, "simulated": True, "data": copy.deepcopy(self.devices[device_id])}
 
+    def reset_all(self):
+        """등록된 모든 가상 장치와 로그를 초기화한다. 요청 중복 방지 기록은 유지한다."""
+        device_ids = list(self.seed)
+        for device_id in device_ids:
+            self.reset(device_id)
+        return {"ok": True, "simulated": True, "device_ids": device_ids, "count": len(device_ids)}
+
     def _append_log(self, device_id, level, component, code, message, details=None, timestamp=None):
         self.log_sequences[device_id] += 1
         self.logs[device_id].append({

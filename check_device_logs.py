@@ -11,7 +11,7 @@ async def main():
     parser.add_argument("--limit", type=int, default=10)
     parser.add_argument("--level", choices=["INFO", "WARN", "ERROR"])
     args = parser.parse_args()
-    client = MCPClient(flaky_first_tool_call=False, server_scripts={"ops": SERVER_DIR / "mcp_server.py"})
+    client = MCPClient( server_scripts={"ops": SERVER_DIR / "mcp_server.py"})
     await client.start()
     try:
         result = await client.call_tool("get_device_logs", {"device_id": args.device_id, "limit": args.limit, "level": args.level})

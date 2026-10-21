@@ -11,7 +11,6 @@ case "$LLM_BACKEND" in
   openai|ollama|fake) ;;
   *) echo "사용법: bash sh/run_iot_agent.sh [openai|ollama|fake]"; exit 1 ;;
 esac
-export SUPERVISOR_VERSION=v2
 export LANGCHAIN_TRACING_V2="${LANGCHAIN_TRACING_V2:-false}"
 export LANGSMITH_TRACING="${LANGSMITH_TRACING:-false}"
 echo "IoT 에이전트: $LLM_BACKEND · http://localhost:8100"

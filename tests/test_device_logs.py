@@ -11,7 +11,7 @@ from fastapi.testclient import TestClient
 from agent.iot_simulator import IoTSimulator
 from agent.query_router import route_query
 from agent.device_rules import CAUTION, allowed_guidance
-from agent.mcp_client import MCPClient, SERVER_DIR
+from agent.mcp_client import MCPClient
 from agent.openai_llm import OpenAIQualityLLM
 from agent.ollama_llm import OllamaQualityLLM
 
@@ -77,10 +77,15 @@ class DeviceLogTests(unittest.TestCase):
 
 class MCPDeviceLogTests(unittest.IsolatedAsyncioTestCase):
     async def test_real_stdio_tool_limit_filter_and_unknown_device(self):
-        client = MCPClient(flaky_first_tool_call=False, server_scripts={"ops": SERVER_DIR / "mcp_server.py"},
+        client = MCPClient(
                            extra_env={"LANGCHAIN_TRACING_V2": "false", "LANGSMITH_TRACING": "false", "PYTHONDONTWRITEBYTECODE": "1"})
         await client.start()
         try:
+            self.assertEqual(set(client.sessions), {"ops"})
+            tools = await client.sessions["ops"].list_tools()
+            self.assertEqual({tool.name for tool in tools.tools}, {
+                "list_devices", "get_device_status", "get_device_logs", "restart_collection",
+                "reset_device_scenario", "reset_all_device_scenarios", "search_iot_manuals", "get_maintenance_history"})
             result = await client.call_tool("get_device_logs", {"device_id": "sensor-03", "limit": 1, "level": "ERROR"})
             self.assertTrue(result["ok"])
             self.assertTrue(result["simulated"])
@@ -95,7 +100,7 @@ class MCPDeviceLogTests(unittest.IsolatedAsyncioTestCase):
         evidence = {"query": "sensor-03 로그 기반 원인 분석", "device_id": "sensor-03",
                     "data": {"battery_pct": 5, "connected": False}, "assessment": {"issues": ["low_battery", "offline"]},
                     "runbook": "절차", "device_logs": IoTSimulator().get_logs("sensor-03")}
-        for model in (OpenAIQualityLLM("test", 0), OllamaQualityLLM("test", 0)):
+        for model in (OpenAIQualityLLM("test"), OllamaQualityLLM("test")):
             with patch("agent.iot_llm.request_explanation", new=AsyncMock(return_value=({}, {}))) as request:
                 await model.explain_device(**evidence)
                 sent = json.loads(request.await_args.kwargs["messages"][1]["content"])
@@ -109,7 +114,7 @@ class DeviceLogAPITests(unittest.TestCase):
         import server
         cls.server = server
         cls.stack = ExitStack()
-        cls.stack.enter_context(patch.dict(os.environ, {"LLM_BACKEND": "fake", "SUPERVISOR_VERSION": "v2", "LANGCHAIN_TRACING_V2": "false", "LANGSMITH_TRACING": "false"}))
+        cls.stack.enter_context(patch.dict(os.environ, {"LLM_BACKEND": "fake", "LANGCHAIN_TRACING_V2": "false", "LANGSMITH_TRACING": "false"}))
         folder = cls.stack.enter_context(tempfile.TemporaryDirectory())
         original = server.SqliteSessionStore
         cls.stack.enter_context(patch.object(server, "SqliteSessionStore", lambda: original(Path(folder)/"logs.db")))
