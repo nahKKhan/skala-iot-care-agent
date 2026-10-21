@@ -16,7 +16,7 @@ from dotenv import load_dotenv
 
 load_dotenv()   # LANGCHAIN_TRACING_V2 / API_KEY / PROJECT — import보다 먼저
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from fastapi.responses import StreamingResponse
 from langsmith import traceable
 from langsmith.run_helpers import get_current_run_tree
@@ -28,6 +28,7 @@ from agent.iot_graph import build_graph
 from agent.mcp_client import MCPClient
 from agent.session_store import SqliteSessionStore
 from agent.supervisor_v1 import run_v1
+from agent.device_rules import assess_device
 
 CREATION_COUNT = 0   # Wave 1 — 프로세스 내 Agent 번들 생성 횟수 (항상 1이어야 정상)
 
@@ -35,6 +36,9 @@ CREATION_COUNT = 0   # Wave 1 — 프로세스 내 Agent 번들 생성 횟수 (�
 class ChatRequest(BaseModel):   # Wave 1 — Pydantic 요청 검증
     message: str
     thread_id: str = "default"
+
+class RecoveryRequest(BaseModel):
+    device_id: str
 
 
 def _build_llms():
@@ -89,6 +93,60 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(lifespan=lifespan)
 
+@app.post("/api/recover")
+async def recover_device(req: RecoveryRequest):
+    mcp = app.state.deps.mcp
+
+    # 1. 현재 상태 조회
+    before = await mcp.call_tool(
+        "get_device_status",
+        {"device_id": req.device_id}
+    )
+
+    if not before["ok"]:
+        raise HTTPException(status_code=404, detail=before["error"])
+
+    # 2. 가상 복구 명령 실행
+    command = await mcp.call_tool(
+        "restart_collection",
+        {"device_id": req.device_id}
+    )
+
+    if not command["ok"]:
+        raise HTTPException(status_code=409, detail=command["error"])
+
+    # 3. 실행 후 상태 재조회
+    after = await mcp.call_tool(
+        "get_device_status",
+        {"device_id": req.device_id}
+    )
+
+    if not after["ok"]:
+        return {
+            "device_id": req.device_id,
+            "command": command,
+            "recovery_verified": None,
+            "message": "명령은 접수됐지만 복구 상태를 확인하지 못했습니다."
+        }
+
+    assessment = assess_device(after["data"])
+
+    verified = (
+        command.get("command_accepted", False)
+        and after["data"]["telemetry_sequence"]
+        > before["data"]["telemetry_sequence"]
+        and assessment["status"] == "healthy"
+    )
+
+    return {
+        "device_id": req.device_id,
+        "simulated": True,
+        "before": before["data"],
+        "command": command,
+        "after": after["data"],
+        "assessment": assessment,
+        "recovery_verified": verified
+    }
 
 @app.get("/health")
 async def health():

@@ -20,6 +20,14 @@ mcp = FastMCP(name="capstone-all-total-ops")
 
 DATA_DIR = Path(__file__).parent / "data"
 
+# 시뮬레이션용 장치 상태
+# telemetry_sequence : 새 데이터가 들어왔는지 구분하는 수신 번호
+DEVICE_STATE = json.loads(
+    (DATA_DIR / "devices.json").read_text(encoding="utf-8")
+)
+
+for device in DEVICE_STATE.values():
+    device["telemetry_sequence"] = 0
 
 class SystemStatus(BaseModel):
     system_name: str = Field(description="시스템 이름")
@@ -56,8 +64,7 @@ def get_monitoring_status(system_name: str) -> SystemStatus:
 @mcp.tool()
 def get_device_status(device_id: str) -> dict:
     """장치 ID로 가상 IoT 장치의 상태를 조회"""
-    devices = json.loads((DATA_DIR / "devices.json").read_text(encoding="utf-8"))
-
+    devices = DEVICE_STATE
     if device_id not in devices:
         return {
             "ok" : False,
@@ -69,6 +76,42 @@ def get_device_status(device_id: str) -> dict:
         "device_id" : device_id,
         "data" : devices[device_id]
     } 
+
+@mcp.tool()
+def restart_collection(device_id: str) -> dict:
+    """가상 장치의 데이터 수집 모듈 재시작을 시뮬레이션합니다."""
+
+    device = DEVICE_STATE.get(device_id)
+
+    if device is None:
+        return {"ok": False, "error": "등록되지 않은 장치입니다."}
+
+    if not device["connected"]:
+        return {"ok": False, "error": "연결이 끊겨 명령을 전달할 수 없습니다."}
+
+    if device["battery_pct"] <= 20:
+        return {"ok": False, "error": "배터리 점검이 먼저 필요합니다."}
+
+    if "restart_collection" not in device["supported_actions"]:
+        return {"ok": False, "error": "지원하지 않는 명령입니다."}
+
+    if (
+        device["telemetry_age_seconds"]
+        <= device["report_interval_seconds"] * 3
+    ):
+        return {"ok": False, "error": "현재 데이터 수신 지연이 없습니다."}
+
+    # 이번 시나리오에서는 재시작 후 새 데이터가 도착한다고 가정
+    device["telemetry_age_seconds"] = 0
+    device["telemetry_sequence"] += 1
+
+    return {
+        "ok": True,
+        "device_id": device_id,
+        "command_accepted": True,
+        "simulated": True,
+        "message": "가상 재시작 명령을 처리했습니다. 장치 상태를 다시 조회하세요."
+    }
 
 @mcp.resource("runbook://incident-response/{incident_type}")
 def get_incident_runbook(incident_type: str) -> str:
