@@ -1,6 +1,7 @@
 # IoT Care 문서 안내
 
 - [프로젝트 소개·설치·실행](../README.md)
+- [제출용 최신 검증 기록·실행 화면 설명](submission_validation.md)
 - [현재 구현 가이드](../IMPLEMENTATION_GUIDE.md)
 - [Ollama·OpenAI 연결과 실행](llm_connection.md)
 - [RAG와 답변 검수](rag_and_quality.md)
