@@ -40,7 +40,7 @@ async def proxy_health():
 @app.post("/chat")
 async def proxy_chat(req: Request):
     body = await req.body()
-    async with httpx.AsyncClient(timeout=120.0) as client:
+    async with httpx.AsyncClient(timeout=210.0) as client:
         r = await client.post(f"{BACKEND}/chat", content=body,
                               headers={"content-type": "application/json"})
     return JSONResponse(r.json(), status_code=r.status_code)
@@ -74,6 +74,27 @@ async def proxy_recover(req: Request):
             status_code=502,
         )
     return JSONResponse(payload, status_code=response.status_code)
+
+
+@app.get("/api/devices")
+async def proxy_devices():
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.get(f"{BACKEND}/api/devices")
+    return JSONResponse(response.json(), status_code=response.status_code)
+
+
+@app.get("/api/maintenance")
+async def proxy_maintenance(device_id: str | None = None):
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.get(f"{BACKEND}/api/maintenance", params={"device_id": device_id} if device_id else {})
+    return JSONResponse(response.json(), status_code=response.status_code)
+
+
+@app.post("/api/scenario/reset")
+async def proxy_reset(req: Request):
+    async with httpx.AsyncClient(timeout=15) as client:
+        response = await client.post(f"{BACKEND}/api/scenario/reset", content=await req.body(), headers={"content-type": "application/json"})
+    return JSONResponse(response.json(), status_code=response.status_code)
 
 
 @app.get("/chat/stream")

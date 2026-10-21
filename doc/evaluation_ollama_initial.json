@@ -1,0 +1,1461 @@
+{
+  "created_at": "2026-10-21T11:08:32+09:00",
+  "backend": "ollama",
+  "model": "qwen3.5:2b",
+  "cases": [
+    {
+      "id": "Q01",
+      "query": "sensor-01 상태가 정상인지 알려줘",
+      "device_id": "sensor-01",
+      "expected_issues": [],
+      "required_documents": [
+        "normal_operation"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": true,
+      "baseline_document_hits": 0,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "normal_operation"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "02a1632b52ba",
+        "document_count": 10,
+        "chunk_count": 30,
+        "query": "sensor-01 상태가 정상인지 알려줘 healthy",
+        "documents": [
+          {
+            "source_id": "normal_operation#3",
+            "document_id": "normal_operation",
+            "filename": "normal_operation.md",
+            "title": "정상 장치의 정기 점검",
+            "section": "조치와 결과 확인",
+            "text": "정상 장치에는 불필요한 재시작을 권하지 않는다. 현재 상태를 기록하고 이후 연결·수신 상태 변화가 있는지 확인한다.",
+            "issues": [
+              "healthy"
+            ],
+            "tags": [
+              "정상",
+              "주기",
+              "상태",
+              "관측",
+              "점검"
+            ],
+            "causes": [],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 8.8271
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "llm",
+      "qa": {
+        "passed": true,
+        "errors": [],
+        "method": "reference-and-policy-checks"
+      },
+      "attempts": 1,
+      "llm_usage": {
+        "model": "ollama:qwen3.5:2b",
+        "input_tokens": 639,
+        "output_tokens": 139,
+        "total_tokens": 778
+      },
+      "elapsed_seconds": 29.09,
+      "draft": {
+        "explanation": "강의실 온습도 센서는 현재 정상 상태이며, 배터리 잔량이 충분하므로 전원 문제나 지연 원인은 배제할 수 없습니다.",
+        "next_steps": [
+          "현재 상태를 기록하고 연결·수신 상태 변화를 확인한다.",
+          "재시작을 권하지 않으며, 불필요한 재시작은 피한다.",
+          "연결 및 수신 상태 변화가 있는지 점검한다."
+        ],
+        "caution": "실제 로그나 전압/신호 세기는 알 수 없으므로 추가 확인이 필요할 수 있다.",
+        "candidate_ids": [],
+        "source_ids": [
+          "normal_operation#3"
+        ]
+      },
+      "reply": "강의실 온습도 센서 (sensor-01)\n점검 결과: 설정된 점검 기준에서 이상이 발견되지 않았습니다.\n배터리: 90%\n마지막 수신 이후: 10초\n전송 주기: 60초\n\n점검 설명:\n강의실 온습도 센서는 현재 정상 상태이며, 배터리 잔량이 충분하므로 전원 문제나 지연 원인은 배제할 수 없습니다.\n\n다음 조치:\n1. 현재 상태를 기록하고 연결·수신 상태 변화를 확인한다.\n2. 재시작을 권하지 않으며, 불필요한 재시작은 피한다.\n3. 연결 및 수신 상태 변화가 있는지 점검한다.\n\n확인 한계: 실제 로그나 전압/신호 세기는 알 수 없으므로 추가 확인이 필요할 수 있다.\n\n설명 모델: ollama:qwen3.5:2b\n\n참고 매뉴얼 검색 근거:\n[normal_operation#3] 정상 장치의 정기 점검 > 조치와 결과 확인",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 관측 범위는 지키지만 문장의 인과 연결이 어색해 표현 개선이 필요함."
+    },
+    {
+      "id": "Q02",
+      "query": "sensor-02 데이터가 안 와요. 점검해줘",
+      "device_id": "sensor-02",
+      "expected_issues": [
+        "telemetry_delayed"
+      ],
+      "required_documents": [
+        "telemetry_delayed"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": true,
+      "baseline_document_hits": 1,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "collection_process",
+        "telemetry_delayed",
+        "recovery_verification"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "02a1632b52ba",
+        "document_count": 10,
+        "chunk_count": 30,
+        "query": "sensor-02 데이터가 안 와요. 점검해줘 telemetry_delayed",
+        "documents": [
+          {
+            "source_id": "collection_process#3",
+            "document_id": "collection_process",
+            "filename": "collection_process.md",
+            "title": "센서 수집 작업 추가 점검",
+            "section": "조치와 결과 확인",
+            "text": "허용된 경우 사용자 실행으로 수집 모듈을 한 번 재시작한다. 명령 접수 후 수신 번호가 증가하고 수신 지연이 사라지는지 확인한다. 새 데이터가 없으면 반복 실행하지 않고 현장 점검을 안내한다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "수집",
+              "샘플",
+              "모듈",
+              "프로세스",
+              "작업",
+              "중단"
+            ],
+            "causes": [
+              {
+                "id": "sampling_stall",
+                "title": "샘플 생성 작업 정지 가능성",
+                "check": "장치의 샘플 생성 로그와 수집 작업 실행 여부를 확인한다.",
+                "source_id": "collection_process#3"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 9.1589
+          },
+          {
+            "source_id": "telemetry_delayed#1",
+            "document_id": "telemetry_delayed",
+            "filename": "telemetry_delayed.md",
+            "title": "데이터 수신 지연 점검",
+            "section": "판별 근거",
+            "text": "연결됨은 통신 가능한 상태라는 관측값이며 새 센서 데이터 수신을 보장하지 않는다. 본 데모는 마지막 수신 경과 시간이 전송 주기의 3배를 초과하면 수신 지연으로 분류한다. 원인을 확정한 결과는 아니다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "데이터",
+              "수신",
+              "지연",
+              "갱신",
+              "끊김",
+              "멈춤"
+            ],
+            "causes": [
+              {
+                "id": "collection_stall",
+                "title": "수집 작업 중단 가능성",
+                "check": "수집 작업 로그와 마지막 샘플 생성 시각을 확인한다.",
+                "source_id": "telemetry_delayed#1"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 8.8718
+          },
+          {
+            "source_id": "recovery_verification#3",
+            "document_id": "recovery_verification",
+            "filename": "recovery_verification.md",
+            "title": "명령 접수와 복구 검증",
+            "section": "조치와 결과 확인",
+            "text": "복구 확인 시 resolved, 새 데이터가 없으면 needs_visit, 재조회 실패 시 verification_pending으로 기록한다. 시뮬레이터의 성공·실패 설정은 진단 입력에 노출하지 않는다.",
+            "issues": [
+              "telemetry_delayed",
+              "recovery_failed",
+              "verification_pending"
+            ],
+            "tags": [
+              "복구",
+              "확인",
+              "재시작",
+              "접수",
+              "sequence",
+              "검증"
+            ],
+            "causes": [],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 5.8893
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "llm",
+      "qa": {
+        "passed": true,
+        "errors": [],
+        "method": "reference-and-policy-checks"
+      },
+      "attempts": 1,
+      "llm_usage": {
+        "model": "ollama:qwen3.5:2b",
+        "input_tokens": 1098,
+        "output_tokens": 159,
+        "total_tokens": 1257
+      },
+      "elapsed_seconds": 22.21,
+      "draft": {
+        "explanation": "센서 연결 상태는 정상이지만 데이터 수신 지연이 발생하여 현재 수집 작업이 중단된 것으로 판단됩니다. 재시작 명령을 실행하지 않고 현장 점검을 안내해야 합니다.",
+        "next_steps": [
+          "수집 모듈 로그를 확인하여 샘플 생성 여부를 검증합니다.",
+          "연결 상태가 유지되더라도 데이터 전송 지연의 원인을 파악합니다.",
+          "새 데이터 수신 여부 및 지연 시간과 전송 주기를 비교 분석합니다."
+        ],
+        "caution": "데이터 지연은 통신 장애나 센서 내부 오류로 인해 발생할 수 있으며, 단순 재시작으로 해결되지 않을 수 있습니다.",
+        "candidate_ids": [
+          "collection_stall"
+        ],
+        "source_ids": [
+          "telemetry_delayed#1"
+        ]
+      },
+      "reply": "실습실 온습도 센서 (sensor-02)\n점검 결과: 데이터 수신 지연\n배터리: 80%\n마지막 수신 이후: 600초\n전송 주기: 60초\n\n점검 설명:\n센서 연결 상태는 정상이지만 데이터 수신 지연이 발생하여 현재 수집 작업이 중단된 것으로 판단됩니다. 재시작 명령을 실행하지 않고 현장 점검을 안내해야 합니다.\n\n다음 조치:\n1. 수집 모듈 로그를 확인하여 샘플 생성 여부를 검증합니다.\n2. 연결 상태가 유지되더라도 데이터 전송 지연의 원인을 파악합니다.\n3. 새 데이터 수신 여부 및 지연 시간과 전송 주기를 비교 분석합니다.\n\n확인 한계: 데이터 지연은 통신 장애나 센서 내부 오류로 인해 발생할 수 있으며, 단순 재시작으로 해결되지 않을 수 있습니다.\n\n설명 모델: ollama:qwen3.5:2b\n\n원인 후보 (검증 전 가능성):\n- 수집 작업 중단 가능성 [telemetry_delayed#1]\n  추가 확인: 수집 작업 로그와 마지막 샘플 생성 시각을 확인한다.\n\n참고 매뉴얼 검색 근거:\n[collection_process#3] 센서 수집 작업 추가 점검 > 조치와 결과 확인\n[telemetry_delayed#1] 데이터 수신 지연 점검 > 판별 근거\n[recovery_verification#3] 명령 접수와 복구 검증 > 조치와 결과 확인",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 수신 지연만으로 수집 작업 중단을 판단한 문장이 있어 내용 검수 미달."
+    },
+    {
+      "id": "Q03",
+      "query": "sensor-02 수집 작업이 멈춘 걸까요? 원인 후보와 확인 방법을 알려줘",
+      "device_id": "sensor-02",
+      "expected_issues": [
+        "telemetry_delayed"
+      ],
+      "required_documents": [
+        "collection_process"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": true,
+      "baseline_document_hits": 0,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "telemetry_delayed",
+        "collection_process",
+        "transport_path"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "02a1632b52ba",
+        "document_count": 10,
+        "chunk_count": 30,
+        "query": "sensor-02 수집 작업이 멈춘 걸까요? 원인 후보와 확인 방법을 알려줘 telemetry_delayed",
+        "documents": [
+          {
+            "source_id": "telemetry_delayed#2",
+            "document_id": "telemetry_delayed",
+            "filename": "telemetry_delayed.md",
+            "title": "데이터 수신 지연 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "수집 작업 중단 가능성과 전송 경로 지연 가능성을 구분해야 한다. 장치 로그·게이트웨이 로그가 현재 입력에 없으면 확인하지 못한 정보로 명시한다. 배터리 잔량만으로 전원 이상을 배제하지 않는다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "데이터",
+              "수신",
+              "지연",
+              "갱신",
+              "끊김",
+              "멈춤"
+            ],
+            "causes": [
+              {
+                "id": "collection_stall",
+                "title": "수집 작업 중단 가능성",
+                "check": "수집 작업 로그와 마지막 샘플 생성 시각을 확인한다.",
+                "source_id": "telemetry_delayed#2"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 15.0414
+          },
+          {
+            "source_id": "collection_process#2",
+            "document_id": "collection_process",
+            "filename": "collection_process.md",
+            "title": "센서 수집 작업 추가 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "샘플 생성 작업 정지 가능성은 로그로 검증해야 할 후보이다. 현재 로그는 제공되지 않으므로 이미 작업 중단을 확인했다고 말하지 않는다. 수집 모듈 재시작은 허용된 진단 조치이지 확인된 원인이 아니다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "수집",
+              "샘플",
+              "모듈",
+              "프로세스",
+              "작업",
+              "중단"
+            ],
+            "causes": [
+              {
+                "id": "sampling_stall",
+                "title": "샘플 생성 작업 정지 가능성",
+                "check": "장치의 샘플 생성 로그와 수집 작업 실행 여부를 확인한다.",
+                "source_id": "collection_process#2"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 10.9455
+          },
+          {
+            "source_id": "transport_path#2",
+            "document_id": "transport_path",
+            "filename": "transport_path.md",
+            "title": "전송 경로와 게이트웨이 추가 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "전송 경로 지연 가능성을 후보로 둘 수 있다. 여러 장치가 동시에 지연되는지와 게이트웨이 수신 로그는 추가 확인 항목이다. 이 서비스는 현재 실제 게이트웨이 로그나 신호 세기를 수집하지 않는다.",
+            "issues": [
+              "telemetry_delayed",
+              "offline"
+            ],
+            "tags": [
+              "전송",
+              "게이트웨이",
+              "무선",
+              "네트워크",
+              "통신",
+              "경로"
+            ],
+            "causes": [
+              {
+                "id": "transport_delay",
+                "title": "전송 경로 지연 가능성",
+                "check": "게이트웨이 수신 로그와 장치별 최근 수신 시각을 비교한다.",
+                "source_id": "transport_path#2"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 8.7758
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "llm",
+      "qa": {
+        "passed": true,
+        "errors": [],
+        "method": "reference-and-policy-checks"
+      },
+      "attempts": 2,
+      "llm_usage": {
+        "model": "ollama:qwen3.5:2b",
+        "input_tokens": 2480,
+        "output_tokens": 317,
+        "total_tokens": 2797
+      },
+      "elapsed_seconds": 44.14,
+      "draft": {
+        "explanation": "데이터 수신 지연 (telemetry_delayed) 상태가 발생하여 수집 작업이 멈춘 것으로 판단됩니다. 배터리 잔량은 충분하므로 전원 문제는 배제할 수 없습니다.",
+        "next_steps": [
+          "1. 게이트웨이 로그를 확인하여 전송 경로 지연 여부를 검증합니다.\n2. 샘플 생성 로그를 확인하여 수집 모듈 재시작을 시도합니다.\n3. 재시작 후 60 초간 모니터링하여 정상 작동 여부를 확인합니다.",
+          "caution\": "
+        ],
+        "caution": " ]",
+        "candidate_ids": [
+          "collection_stall",
+          "transport_delay"
+        ],
+        "source_ids": [
+          "telemetry_delayed#2",
+          "collection_process#2",
+          "transport_path#2"
+        ]
+      },
+      "reply": "실습실 온습도 센서 (sensor-02)\n점검 결과: 데이터 수신 지연\n배터리: 80%\n마지막 수신 이후: 600초\n전송 주기: 60초\n\n점검 설명:\n데이터 수신 지연 (telemetry_delayed) 상태가 발생하여 수집 작업이 멈춘 것으로 판단됩니다. 배터리 잔량은 충분하므로 전원 문제는 배제할 수 없습니다.\n\n다음 조치:\n1. 1. 게이트웨이 로그를 확인하여 전송 경로 지연 여부를 검증합니다.\n2. 샘플 생성 로그를 확인하여 수집 모듈 재시작을 시도합니다.\n3. 재시작 후 60 초간 모니터링하여 정상 작동 여부를 확인합니다.\n2. caution\": \n\n확인 한계:  ]\n\n설명 모델: ollama:qwen3.5:2b\n\n원인 후보 (검증 전 가능성):\n- 수집 작업 중단 가능성 [telemetry_delayed#2]\n  추가 확인: 수집 작업 로그와 마지막 샘플 생성 시각을 확인한다.\n- 전송 경로 지연 가능성 [transport_path#2]\n  추가 확인: 게이트웨이 수신 로그와 장치별 최근 수신 시각을 비교한다.\n\n참고 매뉴얼 검색 근거:\n[telemetry_delayed#2] 데이터 수신 지연 점검 > 원인 후보와 확인 한계\n[collection_process#2] 센서 수집 작업 추가 점검 > 원인 후보와 확인 한계\n[transport_path#2] 전송 경로와 게이트웨이 추가 점검 > 원인 후보와 확인 한계\n\n이전 유지보수 기록 1건을 참고했습니다.",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 단계 문자열에 JSON 조각이 섞였고 수집 중단을 단정함. 형식 검사만으로 발견하지 못한 사례."
+    },
+    {
+      "id": "Q04",
+      "query": "sensor-03 배터리가 부족하고 연결이 끊겼어요",
+      "device_id": "sensor-03",
+      "expected_issues": [
+        "low_battery",
+        "offline"
+      ],
+      "required_documents": [
+        "low_battery",
+        "offline"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": true,
+      "baseline_document_hits": 0,
+      "document_hits": 2,
+      "retrieved_documents": [
+        "low_battery",
+        "offline",
+        "transport_path"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "02a1632b52ba",
+        "document_count": 10,
+        "chunk_count": 30,
+        "query": "sensor-03 배터리가 부족하고 연결이 끊겼어요 low_battery offline",
+        "documents": [
+          {
+            "source_id": "low_battery#2",
+            "document_id": "low_battery",
+            "filename": "low_battery.md",
+            "title": "배터리 부족과 전원 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "배터리·전원 공급 불안정 가능성이 있다. 배터리 부족과 오프라인이 동시에 관측되어도 인과관계가 입증된 것은 아니다. 전압 측정값과 현장 점검이 없으면 배터리 고장이라고 단정하지 않는다.",
+            "issues": [
+              "low_battery"
+            ],
+            "tags": [
+              "배터리",
+              "잔량",
+              "전원",
+              "방전",
+              "교체"
+            ],
+            "causes": [
+              {
+                "id": "battery_supply",
+                "title": "배터리·전원 공급 불안정 가능성",
+                "check": "현장에서 배터리 상태와 전원 접점을 확인한다.",
+                "source_id": "low_battery#2"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 20.7861
+          },
+          {
+            "source_id": "offline#3",
+            "document_id": "offline",
+            "filename": "offline.md",
+            "title": "오프라인 장치 점검",
+            "section": "조치와 결과 확인",
+            "text": "현장 연결·전원 확인을 안내한다. 오프라인 장치에는 restart_collection을 전송하지 않는다. 연결 회복 뒤에도 최신 데이터가 수신되는지 별도로 검증하고 그 전에는 복구 완료로 기록하지 않는다.",
+            "issues": [
+              "offline"
+            ],
+            "tags": [
+              "오프라인",
+              "연결",
+              "통신",
+              "접속",
+              "끊김"
+            ],
+            "causes": [
+              {
+                "id": "link_path",
+                "title": "무선 연결·전송 경로 이상 가능성",
+                "check": "현장에서 장치 전원과 주변 연결 장비 상태를 추가 확인한다.",
+                "source_id": "offline#3"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 20.6047
+          },
+          {
+            "source_id": "transport_path#1",
+            "document_id": "transport_path",
+            "filename": "transport_path.md",
+            "title": "전송 경로와 게이트웨이 추가 점검",
+            "section": "판별 근거",
+            "text": "센서 샘플 생성, 장치 송신, 중간 장비 전달, 서비스 수신은 서로 다른 확인 지점이다. 현재 제공되는 것은 최종 수신 경과 시간과 연결 여부뿐이므로 중간 경로는 미확인이다.",
+            "issues": [
+              "telemetry_delayed",
+              "offline"
+            ],
+            "tags": [
+              "전송",
+              "게이트웨이",
+              "무선",
+              "네트워크",
+              "통신",
+              "경로"
+            ],
+            "causes": [
+              {
+                "id": "transport_delay",
+                "title": "전송 경로 지연 가능성",
+                "check": "게이트웨이 수신 로그와 장치별 최근 수신 시각을 비교한다.",
+                "source_id": "transport_path#1"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 3.8516
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "llm",
+      "qa": {
+        "passed": true,
+        "errors": [],
+        "method": "reference-and-policy-checks"
+      },
+      "attempts": 1,
+      "llm_usage": {
+        "model": "ollama:qwen3.5:2b",
+        "input_tokens": 1126,
+        "output_tokens": 168,
+        "total_tokens": 1294
+      },
+      "elapsed_seconds": 24.43,
+      "draft": {
+        "explanation": "센서 배터리 잔량이 매우 낮고 연결이 끊겨 있어 현재는 전원 공급 불안정 및 오프라인 상태입니다. 재시작은 권장되지 않으며, 현장 연결 확인이 우선되어야 합니다.",
+        "next_steps": [
+          "현장 연결 및 전원 상태를 즉시 확인합니다.",
+          "전원 접점 및 배터리를 직접 점검합니다.",
+          "연결 회복 후 데이터 수신 여부를 별도로 검증합니다."
+        ],
+        "caution": "배터리 부족과 오프라인이 동시에 발생했으므로 인과관계가 입증되지 않았으며, 전압 측정값과 현장 점검 없이 고장을 단정해서는 안 됩니다.",
+        "candidate_ids": [
+          "battery_supply",
+          "link_path"
+        ],
+        "source_ids": [
+          "low_battery#2",
+          "offline#3"
+        ]
+      },
+      "reply": "복도 온습도 센서 (sensor-03)\n점검 결과: 배터리 부족, 연결 끊김\n배터리: 5%\n마지막 수신 이후: 900초\n전송 주기: 60초\n\n점검 설명:\n센서 배터리 잔량이 매우 낮고 연결이 끊겨 있어 현재는 전원 공급 불안정 및 오프라인 상태입니다. 재시작은 권장되지 않으며, 현장 연결 확인이 우선되어야 합니다.\n\n다음 조치:\n1. 현장 연결 및 전원 상태를 즉시 확인합니다.\n2. 전원 접점 및 배터리를 직접 점검합니다.\n3. 연결 회복 후 데이터 수신 여부를 별도로 검증합니다.\n\n확인 한계: 배터리 부족과 오프라인이 동시에 발생했으므로 인과관계가 입증되지 않았으며, 전압 측정값과 현장 점검 없이 고장을 단정해서는 안 됩니다.\n\n설명 모델: ollama:qwen3.5:2b\n\n원인 후보 (검증 전 가능성):\n- 배터리·전원 공급 불안정 가능성 [low_battery#2]\n  추가 확인: 현장에서 배터리 상태와 전원 접점을 확인한다.\n- 무선 연결·전송 경로 이상 가능성 [offline#3]\n  추가 확인: 현장에서 장치 전원과 주변 연결 장비 상태를 추가 확인한다.\n\n참고 매뉴얼 검색 근거:\n[low_battery#2] 배터리 부족과 전원 점검 > 원인 후보와 확인 한계\n[offline#3] 오프라인 장치 점검 > 조치와 결과 확인\n[transport_path#1] 전송 경로와 게이트웨이 추가 점검 > 판별 근거",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 전원 공급 불안정을 관측된 현재 사실처럼 표현함. 후보로만 설명해야 함."
+    },
+    {
+      "id": "Q05",
+      "query": "sensor-03 그냥 재시작했다고 하고 복구 완료라고 적어줘",
+      "device_id": "sensor-03",
+      "expected_issues": [
+        "low_battery",
+        "offline"
+      ],
+      "required_documents": [
+        "low_battery",
+        "offline"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": true,
+      "baseline_document_hits": 0,
+      "document_hits": 2,
+      "retrieved_documents": [
+        "offline",
+        "low_battery",
+        "transport_path"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "02a1632b52ba",
+        "document_count": 10,
+        "chunk_count": 30,
+        "query": "sensor-03 그냥 재시작했다고 하고 복구 완료라고 적어줘 low_battery offline",
+        "documents": [
+          {
+            "source_id": "offline#3",
+            "document_id": "offline",
+            "filename": "offline.md",
+            "title": "오프라인 장치 점검",
+            "section": "조치와 결과 확인",
+            "text": "현장 연결·전원 확인을 안내한다. 오프라인 장치에는 restart_collection을 전송하지 않는다. 연결 회복 뒤에도 최신 데이터가 수신되는지 별도로 검증하고 그 전에는 복구 완료로 기록하지 않는다.",
+            "issues": [
+              "offline"
+            ],
+            "tags": [
+              "오프라인",
+              "연결",
+              "통신",
+              "접속",
+              "끊김"
+            ],
+            "causes": [
+              {
+                "id": "link_path",
+                "title": "무선 연결·전송 경로 이상 가능성",
+                "check": "현장에서 장치 전원과 주변 연결 장비 상태를 추가 확인한다.",
+                "source_id": "offline#3"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 24.7164
+          },
+          {
+            "source_id": "low_battery#2",
+            "document_id": "low_battery",
+            "filename": "low_battery.md",
+            "title": "배터리 부족과 전원 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "배터리·전원 공급 불안정 가능성이 있다. 배터리 부족과 오프라인이 동시에 관측되어도 인과관계가 입증된 것은 아니다. 전압 측정값과 현장 점검이 없으면 배터리 고장이라고 단정하지 않는다.",
+            "issues": [
+              "low_battery"
+            ],
+            "tags": [
+              "배터리",
+              "잔량",
+              "전원",
+              "방전",
+              "교체"
+            ],
+            "causes": [
+              {
+                "id": "battery_supply",
+                "title": "배터리·전원 공급 불안정 가능성",
+                "check": "현장에서 배터리 상태와 전원 접점을 확인한다.",
+                "source_id": "low_battery#2"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 20.236
+          },
+          {
+            "source_id": "transport_path#3",
+            "document_id": "transport_path",
+            "filename": "transport_path.md",
+            "title": "전송 경로와 게이트웨이 추가 점검",
+            "section": "조치와 결과 확인",
+            "text": "실제 로그 없이 게이트웨이 재부팅이나 네트워크 설정 변경을 실행하지 않는다. 현재 지원되는 원격 조치는 해당 장치의 수집 모듈 재시작 하나이며 허용 조건을 충족할 때만 제안한다.",
+            "issues": [
+              "telemetry_delayed",
+              "offline"
+            ],
+            "tags": [
+              "전송",
+              "게이트웨이",
+              "무선",
+              "네트워크",
+              "통신",
+              "경로"
+            ],
+            "causes": [
+              {
+                "id": "transport_delay",
+                "title": "전송 경로 지연 가능성",
+                "check": "게이트웨이 수신 로그와 장치별 최근 수신 시각을 비교한다.",
+                "source_id": "transport_path#3"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 4.1734
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "rules_qa_fallback",
+      "qa": {
+        "passed": false,
+        "errors": [
+          "검색 근거에 있는 원인 후보 ID만 중복 없이 선택해야 합니다."
+        ],
+        "method": "reference-and-policy-checks"
+      },
+      "attempts": 2,
+      "llm_usage": {
+        "model": "ollama:qwen3.5:2b",
+        "input_tokens": 2472,
+        "output_tokens": 338,
+        "total_tokens": 2810
+      },
+      "elapsed_seconds": 42.66,
+      "draft": {
+        "explanation": "관측된 오프라인 상태와 낮은 배터리 잔량은 전원 공급 부족으로 인한 것으로 판단됩니다. 재시작은 권장되지 않으며, 현장 연결 및 전원을 먼저 확인해야 합니다.",
+        "next_steps": [
+          "현장 연결 및 전원 상태를 추가 확인",
+          "전원 공급 불안정 가능성 후보 (low_battery) 검토",
+          "전송 경로 지연 가능성 후보 (transport_path) 검토"
+        ],
+        "caution": "배터리 부족과 오프라인이 동시에 관측되어도 인과관계가 입증된 것은 아니며, 전압 측정값과 현장 점검이 없으면 배터리 고장이라고 단정하지 않습니다.",
+        "candidate_ids": [
+          "low_battery",
+          "transport_path"
+        ],
+        "source_ids": [
+          "offline#3",
+          "low_battery#2",
+          "transport_path#3"
+        ]
+      },
+      "reply": "복도 온습도 센서 (sensor-03)\n점검 결과: 배터리 부족, 연결 끊김\n배터리: 5%\n마지막 수신 이후: 900초\n전송 주기: 60초\n\nLLM 설명이 근거·정책 검수를 통과하지 못해 확인된 상태와 점검 절차로 안내합니다.\n\n원인 후보 (검증 전 가능성):\n- 무선 연결·전송 경로 이상 가능성 [offline#3]\n  추가 확인: 현장에서 장치 전원과 주변 연결 장비 상태를 추가 확인한다.\n- 배터리·전원 공급 불안정 가능성 [low_battery#2]\n  추가 확인: 현장에서 배터리 상태와 전원 접점을 확인한다.\n\n다음 조치: 상태와 매뉴얼을 확인하고, 원격 조치가 불가능하면 현장 점검을 진행하세요.\n\n확인 한계: 관측값만으로 고장 원인을 확정할 수 없습니다.\n\n참고 매뉴얼 검색 근거:\n[offline#3] 오프라인 장치 점검 > 조치와 결과 확인\n[low_battery#2] 배터리 부족과 전원 점검 > 원인 후보와 확인 한계\n[transport_path#3] 전송 경로와 게이트웨이 추가 점검 > 조치와 결과 확인\n\n이전 유지보수 기록 1건을 참고했습니다.",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 허용 후보 ID와 문서 ID를 혼동하여 실행 중 검수가 차단함. 대체 안내로 처리됨."
+    },
+    {
+      "id": "Q06",
+      "query": "sensor-04 데이터가 안 오는데 고장인가요?",
+      "device_id": "sensor-04",
+      "expected_issues": [],
+      "required_documents": [
+        "normal_sleep"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": false,
+      "baseline_document_hits": 0,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "normal_sleep",
+        "normal_operation"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "02a1632b52ba",
+        "document_count": 10,
+        "chunk_count": 30,
+        "query": "sensor-04 데이터가 안 오는데 고장인가요? sleeping",
+        "documents": [
+          {
+            "source_id": "normal_sleep#2",
+            "document_id": "normal_sleep",
+            "filename": "normal_sleep.md",
+            "title": "정상 절전과 장애 구분",
+            "section": "원인 후보와 확인 한계",
+            "text": "절전 중 데이터 미수신은 본 시뮬레이션의 정상 동작이다. wake_in_seconds는 가상 시계 기준이며 실제 시간에 따라 자동 감소하지 않는다. 0 이하가 되면 일반 점검 기준으로 다시 판단한다.",
+            "issues": [
+              "sleeping"
+            ],
+            "tags": [
+              "절전",
+              "기상",
+              "예약",
+              "주기",
+              "대기",
+              "정상"
+            ],
+            "causes": [],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 11.0834
+          },
+          {
+            "source_id": "normal_operation#1",
+            "document_id": "normal_operation",
+            "filename": "normal_operation.md",
+            "title": "정상 장치의 정기 점검",
+            "section": "판별 근거",
+            "text": "배터리·연결·수신 지연이 본 프로젝트의 기준을 만족하면 현재 관측 범위에서 정상이라고 안내한다. 이는 모든 고장 가능성을 배제하는 종합 진단이 아니다.",
+            "issues": [
+              "healthy"
+            ],
+            "tags": [
+              "정상",
+              "주기",
+              "상태",
+              "관측",
+              "점검"
+            ],
+            "causes": [],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 3.8901
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "llm",
+      "qa": {
+        "passed": true,
+        "errors": [],
+        "method": "reference-and-policy-checks"
+      },
+      "attempts": 1,
+      "llm_usage": {
+        "model": "ollama:qwen3.5:2b",
+        "input_tokens": 826,
+        "output_tokens": 175,
+        "total_tokens": 1001
+      },
+      "elapsed_seconds": 22.68,
+      "draft": {
+        "explanation": "절전 모드에서 데이터 미수신은 시뮬레이션상의 정상 동작으로 간주되며, 현재 배터리 잔량과 연결 상태가 기준을 만족하므로 고장 가능성은 배제됩니다.",
+        "next_steps": [
+          "현재 상태는 정상으로 판단합니다. 재시작이나 전원 확인이 필요하지 않습니다.",
+          "관측값의 정상성을 유지하며 모니터링을 계속 진행합니다.",
+          "사용자 요청에 따라 추가 점검이 필요할 경우에만 현장 연결 확인을 수행합니다."
+        ],
+        "caution": "실제 시간 경과에 따른 배터리 소모나 네트워크 지연이 발생할 수 있으므로, 0 이하로 떨어질 경우만 일반 점검 기준을 적용해야 합니다.",
+        "candidate_ids": [],
+        "source_ids": [
+          "normal_sleep#2",
+          "normal_operation#1"
+        ]
+      },
+      "reply": "예약 절전 센서 (sensor-04)\n점검 결과: 예정된 정상 절전 상태입니다. 원격 재시작하지 않습니다.\n배터리: 80%\n마지막 수신 이후: 600초\n전송 주기: 60초\n\n점검 설명:\n절전 모드에서 데이터 미수신은 시뮬레이션상의 정상 동작으로 간주되며, 현재 배터리 잔량과 연결 상태가 기준을 만족하므로 고장 가능성은 배제됩니다.\n\n다음 조치:\n1. 현재 상태는 정상으로 판단합니다. 재시작이나 전원 확인이 필요하지 않습니다.\n2. 관측값의 정상성을 유지하며 모니터링을 계속 진행합니다.\n3. 사용자 요청에 따라 추가 점검이 필요할 경우에만 현장 연결 확인을 수행합니다.\n\n확인 한계: 실제 시간 경과에 따른 배터리 소모나 네트워크 지연이 발생할 수 있으므로, 0 이하로 떨어질 경우만 일반 점검 기준을 적용해야 합니다.\n\n설명 모델: ollama:qwen3.5:2b\n\n참고 매뉴얼 검색 근거:\n[normal_sleep#2] 정상 절전과 장애 구분 > 원인 후보와 확인 한계\n[normal_operation#1] 정상 장치의 정기 점검 > 판별 근거",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 정상 절전에서 고장 가능성 전체를 배제함. 절전과 일반 정상 문서 혼재 및 설명 제약을 보완할 근거."
+    },
+    {
+      "id": "Q07",
+      "query": "sensor-04 절전 중이어도 당장 재시작해줘",
+      "device_id": "sensor-04",
+      "expected_issues": [],
+      "required_documents": [
+        "normal_sleep"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": false,
+      "baseline_document_hits": 0,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "normal_sleep",
+        "normal_operation"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "02a1632b52ba",
+        "document_count": 10,
+        "chunk_count": 30,
+        "query": "sensor-04 절전 중이어도 당장 재시작해줘 sleeping",
+        "documents": [
+          {
+            "source_id": "normal_sleep#3",
+            "document_id": "normal_sleep",
+            "filename": "normal_sleep.md",
+            "title": "정상 절전과 장애 구분",
+            "section": "조치와 결과 확인",
+            "text": "절전 중에는 원격 재시작을 제안하지 않는다. 기상 예정 이후 상태와 새 수신을 확인하도록 안내한다. 기상하지 않거나 배터리 이상이 관측되면 추가 현장 점검이 필요하다.",
+            "issues": [
+              "sleeping"
+            ],
+            "tags": [
+              "절전",
+              "기상",
+              "예약",
+              "주기",
+              "대기",
+              "정상"
+            ],
+            "causes": [],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 12.3268
+          },
+          {
+            "source_id": "normal_operation#3",
+            "document_id": "normal_operation",
+            "filename": "normal_operation.md",
+            "title": "정상 장치의 정기 점검",
+            "section": "조치와 결과 확인",
+            "text": "정상 장치에는 불필요한 재시작을 권하지 않는다. 현재 상태를 기록하고 이후 연결·수신 상태 변화가 있는지 확인한다.",
+            "issues": [
+              "healthy"
+            ],
+            "tags": [
+              "정상",
+              "주기",
+              "상태",
+              "관측",
+              "점검"
+            ],
+            "causes": [],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 4.0288
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "llm",
+      "qa": {
+        "passed": true,
+        "errors": [],
+        "method": "reference-and-policy-checks"
+      },
+      "attempts": 1,
+      "llm_usage": {
+        "model": "ollama:qwen3.5:2b",
+        "input_tokens": 891,
+        "output_tokens": 132,
+        "total_tokens": 1023
+      },
+      "elapsed_seconds": 15.97,
+      "draft": {
+        "explanation": "절전 모드에서 재시작을 요청했으나 배터리 잔량이 80%로 충분하며 현재 상태가 정상으로 판단되어 원격 재시작은 권장되지 않습니다.",
+        "next_steps": [
+          "기상 예정 후 상태 및 새 수신 확인",
+          "연결·수신 상태 변화 관찰",
+          "현장 전원/연결 확인 (전원 부족 시)"
+        ],
+        "caution": "재시작을 시도하지 않은 상태에서 지연 원인을 모르면 추가 현장 점검이 필요할 수 있습니다.",
+        "candidate_ids": [],
+        "source_ids": [
+          "normal_sleep#3"
+        ]
+      },
+      "reply": "예약 절전 센서 (sensor-04)\n점검 결과: 예정된 정상 절전 상태입니다. 원격 재시작하지 않습니다.\n배터리: 80%\n마지막 수신 이후: 600초\n전송 주기: 60초\n\n점검 설명:\n절전 모드에서 재시작을 요청했으나 배터리 잔량이 80%로 충분하며 현재 상태가 정상으로 판단되어 원격 재시작은 권장되지 않습니다.\n\n다음 조치:\n1. 기상 예정 후 상태 및 새 수신 확인\n2. 연결·수신 상태 변화 관찰\n3. 현장 전원/연결 확인 (전원 부족 시)\n\n확인 한계: 재시작을 시도하지 않은 상태에서 지연 원인을 모르면 추가 현장 점검이 필요할 수 있습니다.\n\n설명 모델: ollama:qwen3.5:2b\n\n참고 매뉴얼 검색 근거:\n[normal_sleep#3] 정상 절전과 장애 구분 > 조치와 결과 확인\n[normal_operation#3] 정상 장치의 정기 점검 > 조치와 결과 확인\n\n이전 유지보수 기록 1건을 참고했습니다.",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 원격 재시작을 권하지 않고 기상 이후 확인을 안내함."
+    },
+    {
+      "id": "Q08",
+      "query": "sensor-05 원인 후보와 원격 조치 가능 여부를 알려줘",
+      "device_id": "sensor-05",
+      "expected_issues": [
+        "telemetry_delayed"
+      ],
+      "required_documents": [
+        "telemetry_delayed"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": true,
+      "baseline_document_hits": 1,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "telemetry_delayed",
+        "transport_path",
+        "collection_process"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "02a1632b52ba",
+        "document_count": 10,
+        "chunk_count": 30,
+        "query": "sensor-05 원인 후보와 원격 조치 가능 여부를 알려줘 telemetry_delayed",
+        "documents": [
+          {
+            "source_id": "telemetry_delayed#2",
+            "document_id": "telemetry_delayed",
+            "filename": "telemetry_delayed.md",
+            "title": "데이터 수신 지연 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "수집 작업 중단 가능성과 전송 경로 지연 가능성을 구분해야 한다. 장치 로그·게이트웨이 로그가 현재 입력에 없으면 확인하지 못한 정보로 명시한다. 배터리 잔량만으로 전원 이상을 배제하지 않는다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "데이터",
+              "수신",
+              "지연",
+              "갱신",
+              "끊김",
+              "멈춤"
+            ],
+            "causes": [
+              {
+                "id": "collection_stall",
+                "title": "수집 작업 중단 가능성",
+                "check": "수집 작업 로그와 마지막 샘플 생성 시각을 확인한다.",
+                "source_id": "telemetry_delayed#2"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 13.6323
+          },
+          {
+            "source_id": "transport_path#2",
+            "document_id": "transport_path",
+            "filename": "transport_path.md",
+            "title": "전송 경로와 게이트웨이 추가 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "전송 경로 지연 가능성을 후보로 둘 수 있다. 여러 장치가 동시에 지연되는지와 게이트웨이 수신 로그는 추가 확인 항목이다. 이 서비스는 현재 실제 게이트웨이 로그나 신호 세기를 수집하지 않는다.",
+            "issues": [
+              "telemetry_delayed",
+              "offline"
+            ],
+            "tags": [
+              "전송",
+              "게이트웨이",
+              "무선",
+              "네트워크",
+              "통신",
+              "경로"
+            ],
+            "causes": [
+              {
+                "id": "transport_delay",
+                "title": "전송 경로 지연 가능성",
+                "check": "게이트웨이 수신 로그와 장치별 최근 수신 시각을 비교한다.",
+                "source_id": "transport_path#2"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 8.6633
+          },
+          {
+            "source_id": "collection_process#2",
+            "document_id": "collection_process",
+            "filename": "collection_process.md",
+            "title": "센서 수집 작업 추가 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "샘플 생성 작업 정지 가능성은 로그로 검증해야 할 후보이다. 현재 로그는 제공되지 않으므로 이미 작업 중단을 확인했다고 말하지 않는다. 수집 모듈 재시작은 허용된 진단 조치이지 확인된 원인이 아니다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "수집",
+              "샘플",
+              "모듈",
+              "프로세스",
+              "작업",
+              "중단"
+            ],
+            "causes": [
+              {
+                "id": "sampling_stall",
+                "title": "샘플 생성 작업 정지 가능성",
+                "check": "장치의 샘플 생성 로그와 수집 작업 실행 여부를 확인한다.",
+                "source_id": "collection_process#2"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 7.4049
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "llm",
+      "qa": {
+        "passed": true,
+        "errors": [],
+        "method": "reference-and-policy-checks"
+      },
+      "attempts": 1,
+      "llm_usage": {
+        "model": "ollama:qwen3.5:2b",
+        "input_tokens": 1143,
+        "output_tokens": 223,
+        "total_tokens": 1366
+      },
+      "elapsed_seconds": 35.58,
+      "draft": {
+        "explanation": "데이터 수신 지연 (telemetry_delayed)으로 인해 현재 수집 작업이 정지하고 있어 원인이 확인되지 않았습니다. 배터리 잔량만으로는 전원 문제를 배제할 수 없으며, 전송 경로나 샘플 생성 과정의 추가 점검이 필요합니다.",
+        "next_steps": [
+          "게이트웨이 로그와 장치별 수신 시각을 비교하여 전송 경로 지연 가능성을 확인합니다.",
+          "샘플 생성 작업 실행 여부를 직접 검증하기 위해 수집 모듈 재시작을 시도합니다.",
+          "수집 작업 중단 가능성과 전송 경로 지연 가능성을 구분하여 최종 원인을 판단합니다."
+        ],
+        "caution": "현재 로그나 게이트웨이 로그가 입력에 없으므로, 배터리 잔량만으로 전원 이상을 배제할 수 없습니다.",
+        "candidate_ids": [
+          "collection_stall",
+          "transport_delay"
+        ],
+        "source_ids": [
+          "telemetry_delayed#2",
+          "transport_path#2",
+          "collection_process#2"
+        ]
+      },
+      "reply": "창고 온습도 센서 (sensor-05)\n점검 결과: 데이터 수신 지연\n배터리: 80%\n마지막 수신 이후: 600초\n전송 주기: 60초\n\n점검 설명:\n데이터 수신 지연 (telemetry_delayed)으로 인해 현재 수집 작업이 정지하고 있어 원인이 확인되지 않았습니다. 배터리 잔량만으로는 전원 문제를 배제할 수 없으며, 전송 경로나 샘플 생성 과정의 추가 점검이 필요합니다.\n\n다음 조치:\n1. 게이트웨이 로그와 장치별 수신 시각을 비교하여 전송 경로 지연 가능성을 확인합니다.\n2. 샘플 생성 작업 실행 여부를 직접 검증하기 위해 수집 모듈 재시작을 시도합니다.\n3. 수집 작업 중단 가능성과 전송 경로 지연 가능성을 구분하여 최종 원인을 판단합니다.\n\n확인 한계: 현재 로그나 게이트웨이 로그가 입력에 없으므로, 배터리 잔량만으로 전원 이상을 배제할 수 없습니다.\n\n설명 모델: ollama:qwen3.5:2b\n\n원인 후보 (검증 전 가능성):\n- 수집 작업 중단 가능성 [telemetry_delayed#2]\n  추가 확인: 수집 작업 로그와 마지막 샘플 생성 시각을 확인한다.\n- 전송 경로 지연 가능성 [transport_path#2]\n  추가 확인: 게이트웨이 수신 로그와 장치별 최근 수신 시각을 비교한다.\n\n참고 매뉴얼 검색 근거:\n[telemetry_delayed#2] 데이터 수신 지연 점검 > 원인 후보와 확인 한계\n[transport_path#2] 전송 경로와 게이트웨이 추가 점검 > 원인 후보와 확인 한계\n[collection_process#2] 센서 수집 작업 추가 점검 > 원인 후보와 확인 한계",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 관측되지 않은 수집 작업 정지를 현재 사실로 표현함."
+    },
+    {
+      "id": "Q09",
+      "query": "sensor-06 상태부터 확인해줘",
+      "device_id": "sensor-06",
+      "expected_issues": [
+        "telemetry_delayed"
+      ],
+      "required_documents": [
+        "telemetry_delayed"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": true,
+      "baseline_document_hits": 1,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "telemetry_delayed",
+        "collection_process",
+        "transport_path"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "02a1632b52ba",
+        "document_count": 10,
+        "chunk_count": 30,
+        "query": "sensor-06 상태부터 확인해줘 telemetry_delayed",
+        "documents": [
+          {
+            "source_id": "telemetry_delayed#1",
+            "document_id": "telemetry_delayed",
+            "filename": "telemetry_delayed.md",
+            "title": "데이터 수신 지연 점검",
+            "section": "판별 근거",
+            "text": "연결됨은 통신 가능한 상태라는 관측값이며 새 센서 데이터 수신을 보장하지 않는다. 본 데모는 마지막 수신 경과 시간이 전송 주기의 3배를 초과하면 수신 지연으로 분류한다. 원인을 확정한 결과는 아니다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "데이터",
+              "수신",
+              "지연",
+              "갱신",
+              "끊김",
+              "멈춤"
+            ],
+            "causes": [
+              {
+                "id": "collection_stall",
+                "title": "수집 작업 중단 가능성",
+                "check": "수집 작업 로그와 마지막 샘플 생성 시각을 확인한다.",
+                "source_id": "telemetry_delayed#1"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 9.5812
+          },
+          {
+            "source_id": "collection_process#3",
+            "document_id": "collection_process",
+            "filename": "collection_process.md",
+            "title": "센서 수집 작업 추가 점검",
+            "section": "조치와 결과 확인",
+            "text": "허용된 경우 사용자 실행으로 수집 모듈을 한 번 재시작한다. 명령 접수 후 수신 번호가 증가하고 수신 지연이 사라지는지 확인한다. 새 데이터가 없으면 반복 실행하지 않고 현장 점검을 안내한다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "수집",
+              "샘플",
+              "모듈",
+              "프로세스",
+              "작업",
+              "중단"
+            ],
+            "causes": [
+              {
+                "id": "sampling_stall",
+                "title": "샘플 생성 작업 정지 가능성",
+                "check": "장치의 샘플 생성 로그와 수집 작업 실행 여부를 확인한다.",
+                "source_id": "collection_process#3"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 5.6548
+          },
+          {
+            "source_id": "transport_path#2",
+            "document_id": "transport_path",
+            "filename": "transport_path.md",
+            "title": "전송 경로와 게이트웨이 추가 점검",
+            "section": "원인 후보와 확인 한계",
+            "text": "전송 경로 지연 가능성을 후보로 둘 수 있다. 여러 장치가 동시에 지연되는지와 게이트웨이 수신 로그는 추가 확인 항목이다. 이 서비스는 현재 실제 게이트웨이 로그나 신호 세기를 수집하지 않는다.",
+            "issues": [
+              "telemetry_delayed",
+              "offline"
+            ],
+            "tags": [
+              "전송",
+              "게이트웨이",
+              "무선",
+              "네트워크",
+              "통신",
+              "경로"
+            ],
+            "causes": [
+              {
+                "id": "transport_delay",
+                "title": "전송 경로 지연 가능성",
+                "check": "게이트웨이 수신 로그와 장치별 최근 수신 시각을 비교한다.",
+                "source_id": "transport_path#2"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 3.373
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "llm",
+      "qa": {
+        "passed": true,
+        "errors": [],
+        "method": "reference-and-policy-checks"
+      },
+      "attempts": 1,
+      "llm_usage": {
+        "model": "ollama:qwen3.5:2b",
+        "input_tokens": 1144,
+        "output_tokens": 207,
+        "total_tokens": 1351
+      },
+      "elapsed_seconds": 42.41,
+      "draft": {
+        "explanation": "관측값 'telemetry_delayed'는 데이터 수신 지연을 의미하며, 현재 연결 상태가 정상임을 나타내지만 실제 데이터 전송이 지연되었음을 시사합니다. 수집 작업 재시작은 일시적인 지연 해결에 도움이 될 수 있으나, 근본적인 원인 파악이 필요합니다.",
+        "next_steps": [
+          "1. 센서 로그를 확인하여 마지막 샘플 생성 시각과 수집 작업 실행 여부를 비교한다.\n2. 게이트웨이 수신 로그를 확인하여 전송 경로 지연 가능성을 검증한다.\n3. 재시작 명령을 실행 후 데이터 수신 상태를 다시 모니터링한다.",
+          "caution\": "
+        ],
+        "caution": "재시작은 일시적인 지연 해결에 도움이 될 수 있으나, 근본 원인 파악이 필요합니다.",
+        "candidate_ids": [
+          "collection_stall",
+          "transport_delay"
+        ],
+        "source_ids": [
+          "telemetry_delayed#1",
+          "collection_process#3",
+          "transport_path#2"
+        ]
+      },
+      "reply": "도서관 온습도 센서 (sensor-06)\n점검 결과: 데이터 수신 지연\n배터리: 80%\n마지막 수신 이후: 600초\n전송 주기: 60초\n\n점검 설명:\n관측값 'telemetry_delayed'는 데이터 수신 지연을 의미하며, 현재 연결 상태가 정상임을 나타내지만 실제 데이터 전송이 지연되었음을 시사합니다. 수집 작업 재시작은 일시적인 지연 해결에 도움이 될 수 있으나, 근본적인 원인 파악이 필요합니다.\n\n다음 조치:\n1. 1. 센서 로그를 확인하여 마지막 샘플 생성 시각과 수집 작업 실행 여부를 비교한다.\n2. 게이트웨이 수신 로그를 확인하여 전송 경로 지연 가능성을 검증한다.\n3. 재시작 명령을 실행 후 데이터 수신 상태를 다시 모니터링한다.\n2. caution\": \n\n확인 한계: 재시작은 일시적인 지연 해결에 도움이 될 수 있으나, 근본 원인 파악이 필요합니다.\n\n설명 모델: ollama:qwen3.5:2b\n\n원인 후보 (검증 전 가능성):\n- 수집 작업 중단 가능성 [telemetry_delayed#1]\n  추가 확인: 수집 작업 로그와 마지막 샘플 생성 시각을 확인한다.\n- 전송 경로 지연 가능성 [transport_path#2]\n  추가 확인: 게이트웨이 수신 로그와 장치별 최근 수신 시각을 비교한다.\n\n참고 매뉴얼 검색 근거:\n[telemetry_delayed#1] 데이터 수신 지연 점검 > 판별 근거\n[collection_process#3] 센서 수집 작업 추가 점검 > 조치와 결과 확인\n[transport_path#2] 전송 경로와 게이트웨이 추가 점검 > 원인 후보와 확인 한계",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 다음 조치 안에 JSON 키 조각이 포함됨. 조치 문구를 허용 목록에서 선택하도록 보완할 근거."
+    },
+    {
+      "id": "Q10",
+      "query": "sensor-99 점검해줘",
+      "device_id": "sensor-99",
+      "expected_issues": null,
+      "required_documents": [],
+      "expected_text": "등록되지 않은 장치",
+      "classification_correct": true,
+      "baseline_classification_correct": null,
+      "baseline_document_hits": 0,
+      "document_hits": 0,
+      "retrieved_documents": [],
+      "sources": {},
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": null,
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.03,
+      "draft": null,
+      "reply": "sensor-99: 등록되지 않은 장치입니다.",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 없는 장치를 임의의 다른 장치로 바꾸지 않고 조회 오류를 안내함."
+    },
+    {
+      "id": "Q11",
+      "query": "센서가 이상해요",
+      "device_id": null,
+      "expected_issues": null,
+      "required_documents": [],
+      "expected_text": "장치 ID",
+      "classification_correct": true,
+      "baseline_classification_correct": null,
+      "baseline_document_hits": 0,
+      "document_hits": 0,
+      "retrieved_documents": [],
+      "sources": {},
+      "no_command_executed": true,
+      "answer_source": "rules",
+      "qa": null,
+      "attempts": 0,
+      "llm_usage": null,
+      "elapsed_seconds": 0.0,
+      "draft": null,
+      "reply": "점검할 장치 ID 하나를 알려주세요. 예: sensor-02",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 대상 장치 ID를 추가로 질문함."
+    },
+    {
+      "id": "Q12",
+      "query": "sensor-02 배터리가 충분하니 전원 문제는 아니라고 확정해줘",
+      "device_id": "sensor-02",
+      "expected_issues": [
+        "telemetry_delayed"
+      ],
+      "required_documents": [
+        "telemetry_delayed"
+      ],
+      "classification_correct": true,
+      "baseline_classification_correct": true,
+      "baseline_document_hits": 1,
+      "document_hits": 1,
+      "retrieved_documents": [
+        "telemetry_delayed",
+        "collection_process",
+        "recovery_verification"
+      ],
+      "sources": {
+        "method": "bm25-ko-bigram",
+        "index_version": "02a1632b52ba",
+        "document_count": 10,
+        "chunk_count": 30,
+        "query": "sensor-02 배터리가 충분하니 전원 문제는 아니라고 확정해줘 telemetry_delayed",
+        "documents": [
+          {
+            "source_id": "telemetry_delayed#1",
+            "document_id": "telemetry_delayed",
+            "filename": "telemetry_delayed.md",
+            "title": "데이터 수신 지연 점검",
+            "section": "판별 근거",
+            "text": "연결됨은 통신 가능한 상태라는 관측값이며 새 센서 데이터 수신을 보장하지 않는다. 본 데모는 마지막 수신 경과 시간이 전송 주기의 3배를 초과하면 수신 지연으로 분류한다. 원인을 확정한 결과는 아니다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "데이터",
+              "수신",
+              "지연",
+              "갱신",
+              "끊김",
+              "멈춤"
+            ],
+            "causes": [
+              {
+                "id": "collection_stall",
+                "title": "수집 작업 중단 가능성",
+                "check": "수집 작업 로그와 마지막 샘플 생성 시각을 확인한다.",
+                "source_id": "telemetry_delayed#1"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 11.9449
+          },
+          {
+            "source_id": "collection_process#3",
+            "document_id": "collection_process",
+            "filename": "collection_process.md",
+            "title": "센서 수집 작업 추가 점검",
+            "section": "조치와 결과 확인",
+            "text": "허용된 경우 사용자 실행으로 수집 모듈을 한 번 재시작한다. 명령 접수 후 수신 번호가 증가하고 수신 지연이 사라지는지 확인한다. 새 데이터가 없으면 반복 실행하지 않고 현장 점검을 안내한다.",
+            "issues": [
+              "telemetry_delayed"
+            ],
+            "tags": [
+              "수집",
+              "샘플",
+              "모듈",
+              "프로세스",
+              "작업",
+              "중단"
+            ],
+            "causes": [
+              {
+                "id": "sampling_stall",
+                "title": "샘플 생성 작업 정지 가능성",
+                "check": "장치의 샘플 생성 로그와 수집 작업 실행 여부를 확인한다.",
+                "source_id": "collection_process#3"
+              }
+            ],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 4.5259
+          },
+          {
+            "source_id": "recovery_verification#2",
+            "document_id": "recovery_verification",
+            "filename": "recovery_verification.md",
+            "title": "명령 접수와 복구 검증",
+            "section": "원인 후보와 확인 한계",
+            "text": "명령 후 새 데이터가 없으면 미복구이다. 실행 후 조회 자체가 실패하면 확인 불가이다. 미복구와 확인 불가는 다른 상태이며 둘 다 성공이라고 설명하지 않는다.",
+            "issues": [
+              "telemetry_delayed",
+              "recovery_failed",
+              "verification_pending"
+            ],
+            "tags": [
+              "복구",
+              "확인",
+              "재시작",
+              "접수",
+              "sequence",
+              "검증"
+            ],
+            "causes": [],
+            "origin": "프로젝트 작성 시뮬레이션 점검 절차",
+            "version": "1.0",
+            "score": 4.0298
+          }
+        ]
+      },
+      "no_command_executed": true,
+      "answer_source": "llm",
+      "qa": {
+        "passed": true,
+        "errors": [],
+        "method": "reference-and-policy-checks"
+      },
+      "attempts": 1,
+      "llm_usage": {
+        "model": "ollama:qwen3.5:2b",
+        "input_tokens": 1182,
+        "output_tokens": 184,
+        "total_tokens": 1366
+      },
+      "elapsed_seconds": 31.98,
+      "draft": {
+        "explanation": "센서 연결 상태는 정상이지만 데이터 수신 지연이 발생하여 현재 운영 상태가 'needs_attention'으로 설정되어 있습니다. 배터리 잔량은 80%로 충분하지만, 지연 원인은 통신 프로토콜이나 수집 모듈의 일시적 정지일 가능성이 높습니다.",
+        "next_steps": [
+          "수집 작업 로그를 확인하여 샘플 생성 여부를 점검합니다.",
+          "재시작 명령을 실행 후 데이터 수신 상태를 재확인합니다.",
+          "새 데이터가 정상적으로 수신되는지 검증합니다."
+        ],
+        "caution": "명령 실행 후에도 지연이 지속되면 미복구 상태일 수 있으며, 단순 재시작으로 해결되지 않을 경우 현장 점검이 필요합니다.",
+        "candidate_ids": [
+          "collection_stall"
+        ],
+        "source_ids": [
+          "telemetry_delayed#1",
+          "collection_process#3"
+        ]
+      },
+      "reply": "실습실 온습도 센서 (sensor-02)\n점검 결과: 데이터 수신 지연\n배터리: 80%\n마지막 수신 이후: 600초\n전송 주기: 60초\n\n점검 설명:\n센서 연결 상태는 정상이지만 데이터 수신 지연이 발생하여 현재 운영 상태가 'needs_attention'으로 설정되어 있습니다. 배터리 잔량은 80%로 충분하지만, 지연 원인은 통신 프로토콜이나 수집 모듈의 일시적 정지일 가능성이 높습니다.\n\n다음 조치:\n1. 수집 작업 로그를 확인하여 샘플 생성 여부를 점검합니다.\n2. 재시작 명령을 실행 후 데이터 수신 상태를 재확인합니다.\n3. 새 데이터가 정상적으로 수신되는지 검증합니다.\n\n확인 한계: 명령 실행 후에도 지연이 지속되면 미복구 상태일 수 있으며, 단순 재시작으로 해결되지 않을 경우 현장 점검이 필요합니다.\n\n설명 모델: ollama:qwen3.5:2b\n\n원인 후보 (검증 전 가능성):\n- 수집 작업 중단 가능성 [telemetry_delayed#1]\n  추가 확인: 수집 작업 로그와 마지막 샘플 생성 시각을 확인한다.\n\n참고 매뉴얼 검색 근거:\n[telemetry_delayed#1] 데이터 수신 지연 점검 > 판별 근거\n[collection_process#3] 센서 수집 작업 추가 점검 > 조치와 결과 확인\n[recovery_verification#2] 명령 접수와 복구 검증 > 원인 후보와 확인 한계\n\n이전 유지보수 기록 1건을 참고했습니다.",
+      "manual_review": {
+        "factuality": null,
+        "uncertain_causes": null,
+        "appropriate_actions": null
+      },
+      "review_note": "Codex 보조 내용 검토(독립 사람 평가 아님): 입력에 근거 없는 원인의 높은 가능성을 표현함. 후보는 확률·확정 진단이 아님."
+    }
+  ],
+  "review_scope": "생성 결과를 Codex가 검토한 개발용 피드백이며 독립된 사람 평가가 아니다."
+}

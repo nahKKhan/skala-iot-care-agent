@@ -238,6 +238,16 @@ class OllamaFastLLM(OllamaLLM):
 class OllamaQualityLLM(OllamaLLM):
     """최종 답변 작성 전담 (상대적으로 큰 모델)."""
 
+    @traceable(run_type="llm", name="ollama_quality.explain_device")
+    async def explain_device(self, *, query, device_id, data, assessment, runbook,
+                             documents=None, history=None, cause_candidates=None, feedback=None):
+        from .iot_llm import make_messages, request_explanation
+        messages = make_messages(query, device_id, data, assessment, runbook,
+                                 documents=documents, history=history,
+                                 cause_candidates=cause_candidates, feedback=feedback)
+        return await request_explanation(
+            backend="ollama", model=self.model, messages=messages)
+
     @traceable(run_type="llm", name="ollama_quality.write")
     async def write(self, query: str, collected: list[dict], attempt: int,
               feedback: str | None, on_token=None) -> tuple[str, dict]:

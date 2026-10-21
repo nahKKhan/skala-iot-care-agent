@@ -20,14 +20,12 @@ mcp = FastMCP(name="capstone-all-total-ops")
 
 DATA_DIR = Path(__file__).parent / "data"
 
-# 시뮬레이션용 장치 상태
-# telemetry_sequence : 새 데이터가 들어왔는지 구분하는 수신 번호
-DEVICE_STATE = json.loads(
-    (DATA_DIR / "devices.json").read_text(encoding="utf-8")
-)
+from agent.iot_simulator import IoTSimulator
+from agent.manual_search import ManualIndex
+from agent.session_store import SqliteSessionStore
 
-for device in DEVICE_STATE.values():
-    device["telemetry_sequence"] = 0
+SIMULATOR = IoTSimulator()
+MANUAL_INDEX = ManualIndex()
 
 class SystemStatus(BaseModel):
     system_name: str = Field(description="시스템 이름")
@@ -60,58 +58,49 @@ def get_monitoring_status(system_name: str) -> SystemStatus:
         alerts=data.get("alerts", []),
     )
 
-# 추가한 부분 (devices 데이터를 Mcp에 연결)
+@mcp.tool()
+def list_devices() -> dict:
+    """가상 장치 목록과 관측 가능한 현재 상태. 숨겨진 시나리오 정답은 반환하지 않는다."""
+    return {"ok": True, "devices": [{"device_id": key, "name": value["name"],
+            "available": key not in SIMULATOR.unavailable} for key, value in SIMULATOR.devices.items()]}
+
+
 @mcp.tool()
 def get_device_status(device_id: str) -> dict:
-    """장치 ID로 가상 IoT 장치의 상태를 조회"""
-    devices = DEVICE_STATE
-    if device_id not in devices:
-        return {
-            "ok" : False,
-            "device_id" : device_id,
-            "error" : "등록되지 않은 장치입니다."
-        }
-    return {
-        "ok" : True,
-        "device_id" : device_id,
-        "data" : devices[device_id]
-    } 
+    """장치의 현재 관측 상태를 조회한다."""
+    return SIMULATOR.status(device_id)
+
 
 @mcp.tool()
-def restart_collection(device_id: str) -> dict:
-    """가상 장치의 데이터 수집 모듈 재시작을 시뮬레이션합니다."""
+def restart_collection(device_id: str, request_id: str = "") -> dict:
+    """허용된 가상 수집 모듈 재시작. 명령 접수와 데이터 복구는 구분한다."""
+    return SIMULATOR.restart(device_id, request_id)
 
-    device = DEVICE_STATE.get(device_id)
 
-    if device is None:
-        return {"ok": False, "error": "등록되지 않은 장치입니다."}
+@mcp.tool()
+def reset_device_scenario(device_id: str) -> dict:
+    """가상 장치만 초기 상태로 되돌리고 시나리오 버전을 변경한다. 유지보수 이력은 보존한다."""
+    return SIMULATOR.reset(device_id)
 
-    if not device["connected"]:
-        return {"ok": False, "error": "연결이 끊겨 명령을 전달할 수 없습니다."}
 
-    if device["battery_pct"] <= 20:
-        return {"ok": False, "error": "배터리 점검이 먼저 필요합니다."}
+@mcp.tool()
+def search_iot_manuals(query: str, issues: list[str] | None = None,
+                       operating_state: str | None = None, top_k: int = 3) -> dict:
+    """IoT 매뉴얼 문단을 BM25로 검색하고 문서·문단 ID·점수·본문·후보 정보를 반환한다."""
+    return MANUAL_INDEX.search(query, issues=issues, operating_state=operating_state, top_k=top_k)
 
-    if "restart_collection" not in device["supported_actions"]:
-        return {"ok": False, "error": "지원하지 않는 명령입니다."}
 
-    if (
-        device["telemetry_age_seconds"]
-        <= device["report_interval_seconds"] * 3
-    ):
-        return {"ok": False, "error": "현재 데이터 수신 지연이 없습니다."}
+@mcp.tool()
+def get_maintenance_history(device_id: str, limit: int = 3) -> dict:
+    """대화가 아닌 영속 유지보수 이력을 조회한다."""
+    store = SqliteSessionStore()
+    try:
+        history = store.maintenance_history(device_id, limit)
+        return {"ok": True, "device_id": device_id, "records": [
+            {key: row[key] for key in ("id", "kind", "status", "summary", "updated_at")} for row in history]}
+    finally:
+        store.close()
 
-    # 이번 시나리오에서는 재시작 후 새 데이터가 도착한다고 가정
-    device["telemetry_age_seconds"] = 0
-    device["telemetry_sequence"] += 1
-
-    return {
-        "ok": True,
-        "device_id": device_id,
-        "command_accepted": True,
-        "simulated": True,
-        "message": "가상 재시작 명령을 처리했습니다. 장치 상태를 다시 조회하세요."
-    }
 
 @mcp.resource("runbook://incident-response/{incident_type}")
 def get_incident_runbook(incident_type: str) -> str:

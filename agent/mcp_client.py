@@ -43,7 +43,9 @@ def _attr(obj, *names):
 
 class MCPClient:
     def __init__(self, flaky_first_tool_call: bool = True,
-                 server_scripts: dict[str, Path] | None = None):
+                 server_scripts: dict[str, Path] | None = None,
+                 extra_env: dict[str, str] | None = None):
+        self._extra_env = extra_env or {}
         self._server_scripts = server_scripts or DEFAULT_SERVER_SCRIPTS
         self._stack: AsyncExitStack | None = None
         self.sessions: dict[str, ClientSession] = {}
@@ -55,7 +57,7 @@ class MCPClient:
         for server_name, script in self._server_scripts.items():
             params = StdioServerParameters(
                 command=sys.executable, args=[str(script)],
-                env={**os.environ, "FASTMCP_LOG_LEVEL": "ERROR"})
+                env={**os.environ, **self._extra_env, "FASTMCP_LOG_LEVEL": "ERROR"})
             read, write = await self._stack.enter_async_context(stdio_client(params))
             session = await self._stack.enter_async_context(ClientSession(read, write))
             await session.initialize()

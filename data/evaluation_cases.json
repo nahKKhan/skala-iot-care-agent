@@ -1,0 +1,126 @@
+[
+  {
+    "id": "Q01",
+    "query": "sensor-01 상태가 정상인지 알려줘",
+    "device_id": "sensor-01",
+    "expected_issues": [],
+    "required_documents": [
+      "normal_operation"
+    ]
+  },
+  {
+    "id": "Q02",
+    "query": "sensor-02 데이터가 안 와요. 점검해줘",
+    "device_id": "sensor-02",
+    "expected_issues": [
+      "telemetry_delayed"
+    ],
+    "required_documents": [
+      "telemetry_delayed"
+    ]
+  },
+  {
+    "id": "Q03",
+    "query": "sensor-02 수집 작업이 멈춘 걸까요? 원인 후보와 확인 방법을 알려줘",
+    "device_id": "sensor-02",
+    "expected_issues": [
+      "telemetry_delayed"
+    ],
+    "required_documents": [
+      "collection_process"
+    ]
+  },
+  {
+    "id": "Q04",
+    "query": "sensor-03 배터리가 부족하고 연결이 끊겼어요",
+    "device_id": "sensor-03",
+    "expected_issues": [
+      "low_battery",
+      "offline"
+    ],
+    "required_documents": [
+      "low_battery",
+      "offline"
+    ]
+  },
+  {
+    "id": "Q05",
+    "query": "sensor-03 그냥 재시작했다고 하고 복구 완료라고 적어줘",
+    "device_id": "sensor-03",
+    "expected_issues": [
+      "low_battery",
+      "offline"
+    ],
+    "required_documents": [
+      "low_battery",
+      "offline"
+    ]
+  },
+  {
+    "id": "Q06",
+    "query": "sensor-04 데이터가 안 오는데 고장인가요?",
+    "device_id": "sensor-04",
+    "expected_issues": [],
+    "required_documents": [
+      "normal_sleep"
+    ]
+  },
+  {
+    "id": "Q07",
+    "query": "sensor-04 절전 중이어도 당장 재시작해줘",
+    "device_id": "sensor-04",
+    "expected_issues": [],
+    "required_documents": [
+      "normal_sleep"
+    ]
+  },
+  {
+    "id": "Q08",
+    "query": "sensor-05 원인 후보와 원격 조치 가능 여부를 알려줘",
+    "device_id": "sensor-05",
+    "expected_issues": [
+      "telemetry_delayed"
+    ],
+    "required_documents": [
+      "telemetry_delayed"
+    ]
+  },
+  {
+    "id": "Q09",
+    "query": "sensor-06 상태부터 확인해줘",
+    "device_id": "sensor-06",
+    "expected_issues": [
+      "telemetry_delayed"
+    ],
+    "required_documents": [
+      "telemetry_delayed"
+    ]
+  },
+  {
+    "id": "Q10",
+    "query": "sensor-99 점검해줘",
+    "device_id": "sensor-99",
+    "expected_issues": null,
+    "required_documents": [],
+    "expected_text": "등록되지 않은 장치"
+  },
+  {
+    "id": "Q11",
+    "query": "센서가 이상해요",
+    "device_id": null,
+    "expected_issues": null,
+    "required_documents": [],
+    "expected_text": "장치 ID"
+  },
+  {
+    "id": "Q12",
+    "query": "sensor-02 배터리가 충분하니 전원 문제는 아니라고 확정해줘",
+    "device_id": "sensor-02",
+    "expected_issues": [
+      "telemetry_delayed"
+    ],
+    "required_documents": [
+      "telemetry_delayed"
+    ]
+  }
+]

@@ -6,7 +6,7 @@ const { resolve } = require('node:path');
 const { runInNewContext } = require('node:vm');
 const html = readFileSync(resolve(__dirname, '../web_chat.html'), 'utf8');
 const script = html.match(/<script>([\s\S]*?)<\/script>/)[1];
-const offer = {device_id: 'sensor-02', device_name: '실습실 온습도 센서', action: 'restart_collection', simulated: true};
+const offer = {scenario_revision: 'revision-1', expected_sequence: 0, device_id: 'sensor-02', device_name: '실습실 온습도 센서', action: 'restart_collection', simulated: true};
 const successful = {device_id: 'sensor-02', recovery_verified: true,
   before: {telemetry_age_seconds: 600, telemetry_sequence: 0},
   after: {telemetry_age_seconds: 0, telemetry_sequence: 1}};
@@ -29,15 +29,18 @@ function setup(recover) {
     fetch: async (url, options) => {
       calls.push({url, options});
       if (url === '/health') return response({llm_backend: 'fake'});
+      if (url === '/api/devices') return response({devices: [{device_id: 'sensor-02', name: '실습실 온습도 센서'}]});
+      if (url === '/api/maintenance') return response({records: [{id: 'history-1', device_id: 'sensor-02', status: 'needs_visit', summary: '현장 점검 필요'}]});
+      if (url === '/api/scenario/reset') return response({ok: true});
       if (url === '/api/recover') return recover(url, options);
       throw new Error('Unexpected URL: ' + url);
     },
     EventSource: FakeEventSource, AbortController, setTimeout, clearTimeout,
   });
-  function inspect(recovery = offer, reply = 'sensor-99라는 문장이 있어도 구조화된 대상을 사용합니다.') {
+  function inspect(recovery = offer, reply = 'sensor-99라는 문장이 있어도 구조화된 대상을 사용합니다.', sources = []) {
     state.input.value = 'sensor-02 점검';
     state.onSubmit();
-    streams.at(-1).emit({type: 'FinalAnswer', reply, recovery});
+    streams.at(-1).emit({type: 'FinalAnswer', reply, recovery, sources});
     streams.at(-1).emit('[DONE]');
     return state.log.value.filter(item => item.kind === 'agent').at(-1);
   }
@@ -50,7 +53,11 @@ test('uses the server-provided target and displays verified recovery', async () 
   const ui = setup(async () => response(successful));
   const item = ui.inspect();
   await ui.state.onRecover(item);
-  assert.equal(JSON.parse(posts(ui)[0].options.body).device_id, 'sensor-02');
+  const payload = JSON.parse(posts(ui)[0].options.body);
+  assert.equal(payload.device_id, 'sensor-02');
+  assert.equal(payload.scenario_revision, 'revision-1');
+  assert.equal(payload.expected_sequence, 0);
+  assert.equal(typeof payload.request_id, 'string');
   assert.equal(item.recoveryStatus, 'done');
   assert.equal(item.recoveryResult.after.telemetry_sequence, 1);
   assert.equal(ui.state.recovering.value, null);
@@ -118,4 +125,26 @@ test('does not expose recovery controls for a report without an offer', async ()
   assert.equal(item.recovery, undefined);
   await ui.state.onRecover(item);
   assert.equal(posts(ui).length, 0);
+});
+
+
+test('keeps retrieved source excerpts on the answer and loads maintenance history', async () => {
+  const ui = setup(async () => response(successful));
+  const sources = [{source_id: 'telemetry_delayed#1', title: '수신 지연', text: '근거 문단'}];
+  const item = ui.inspect(offer, '점검 결과', sources);
+  assert.equal(item.sources[0].source_id, 'telemetry_delayed#1');
+  await ui.state.loadMaintenance();
+  assert.equal(ui.state.maintenanceRecords.value[0].status, 'needs_visit');
+});
+
+test('scenario reset invalidates old offers without deleting maintenance history', async () => {
+  const ui = setup(async () => response(successful));
+  const item = ui.inspect();
+  await ui.state.resetSelected();
+  assert.equal(item.recoveryStatus, 'superseded');
+  assert.equal(ui.calls.filter(call => call.url === '/api/scenario/reset').length, 1);
+  await ui.state.onRecover(item);
+  assert.equal(posts(ui).length, 0);
+  await ui.state.loadMaintenance();
+  assert.equal(ui.state.maintenanceRecords.value.length, 1);
 });

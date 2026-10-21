@@ -208,6 +208,16 @@ class OpenAIFastLLM(OpenAILLM):
 class OpenAIQualityLLM(OpenAILLM):
     """최종 답변 작성 전담 (고품질 모델, 기본 gpt-4o)."""
 
+    @traceable(run_type="llm", name="openai_quality.explain_device")
+    async def explain_device(self, *, query, device_id, data, assessment, runbook,
+                             documents=None, history=None, cause_candidates=None, feedback=None):
+        from .iot_llm import make_messages, request_explanation
+        messages = make_messages(query, device_id, data, assessment, runbook,
+                                 documents=documents, history=history,
+                                 cause_candidates=cause_candidates, feedback=feedback)
+        return await request_explanation(
+            backend="openai", model=self.model, messages=messages, api_key=self.api_key)
+
     @traceable(run_type="llm", name="openai_quality.write")
     async def write(self, query: str, collected: list[dict], attempt: int,
               feedback: str | None, on_token=None) -> tuple[str, dict]:
