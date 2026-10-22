@@ -10,7 +10,7 @@ from unittest.mock import AsyncMock, patch
 from fastapi.testclient import TestClient
 from agent.iot_simulator import IoTSimulator
 from agent.query_router import route_query
-from agent.device_rules import CAUTION, allowed_guidance
+from agent.device_rules import CAUTION, allowed_guidance, required_observation_explanation
 from agent.mcp_client import MCPClient
 from agent.openai_llm import OpenAIQualityLLM
 from agent.ollama_llm import OllamaQualityLLM
@@ -148,7 +148,7 @@ class DeviceLogAPITests(unittest.TestCase):
     def test_diagnosis_passes_logs_to_model_and_archives_evidence(self):
         async def explain(**evidence):
             candidates = evidence["cause_candidates"][:2]
-            return {"explanation": "현재 관측 상태에 대한 추가 점검이 필요합니다.",
+            return {"explanation": required_observation_explanation(evidence["assessment"]) or "현재 관측 상태에 대한 추가 점검이 필요합니다.",
                     "next_steps": allowed_guidance(evidence["data"], evidence["assessment"], candidates)[:2],
                     "caution": CAUTION, "candidate_ids": [c["id"] for c in candidates],
                     "source_ids": [d["source_id"] for d in evidence["documents"]]}, {"model": "test", "total_tokens": 1}

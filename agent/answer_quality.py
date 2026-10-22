@@ -1,6 +1,7 @@
 """출처 ID·후보·수치·위험한 단정을 검사하는 제한된 코드 검수. 의미 정확성 보증은 아니다."""
 import re
-from .device_rules import can_recover, allowed_guidance, CAUTION
+from .device_rules import (can_recover, allowed_guidance, CAUTION,
+                           required_observation_explanation, RECHECK_STEP, COLLECTOR_RECOVERY_STEP)
 
 
 def check_answer(answer, *, device_id, data, assessment, documents, candidates):
@@ -12,6 +13,20 @@ def check_answer(answer, *, device_id, data, assessment, documents, candidates):
     guidance = allowed_guidance(data, assessment, candidates)
     if any(step not in guidance for step in answer.get("next_steps", [])) or not answer.get("next_steps"):
         errors.append("next_steps는 현재 상태와 검색 문서에서 허용된 문장 중 선택해야 합니다.")
+    steps = answer.get("next_steps", [])
+    if len(steps) != len(set(steps)):
+        errors.append("next_steps에 동일 조치를 중복하지 마세요.")
+    if COLLECTOR_RECOVERY_STEP in steps and (
+        RECHECK_STEP not in steps or steps.index(RECHECK_STEP) > steps.index(COLLECTOR_RECOVERY_STEP)):
+        errors.append("수집기 재시작을 안내하려면 상태 재조회 문장을 먼저 포함해야 합니다.")
+    required = required_observation_explanation(assessment)
+    if required and answer.get("explanation") != required:
+        errors.append("관측 한계가 중요한 상태입니다. required_explanation 문장을 그대로 사용하세요.")
+    # 설명은 관측 사실 전용이다. 인과 추론은 미확정 후보 목록에서만 허용한다.
+    explanation = re.sub(r"\s+", "", answer.get("explanation", ""))
+    if re.search(r"때문|탓에|인해|인하여|로인한|따라서|그결과|초래|야기|"
+                 r"부족(?:하여|해서|으로|하므로|하기에)|낮아서|방전(?:되어|돼서|으로)", explanation):
+        errors.append("explanation에서는 동시 관측을 인과관계로 연결하지 말고 관측 사실만 설명하세요.")
     if answer.get("caution") != CAUTION:
         errors.append("caution은 제공된 확인 한계 문장을 그대로 사용해야 합니다.")
     selected = answer.get("candidate_ids", [])

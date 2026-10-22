@@ -1,6 +1,8 @@
 # IoT Care 문서 안내
 
 - [프로젝트 소개·설치·실행](../README.md)
+- [답변 품질 보완·실제 모델 전후 재검증](answer_quality_improvements_20261022.md)
+- [보완 전 실제 OpenAI 재평가·내용 검토](model_reevaluation_20261022.md)
 - [공식 매뉴얼 교체 이전 제출 검증·실행 화면 설명](submission_validation.md)
 - [현재 구현 가이드](../IMPLEMENTATION_GUIDE.md)
 - [Ollama·OpenAI 연결과 실행](llm_connection.md)

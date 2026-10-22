@@ -74,3 +74,17 @@ node --test tests/recovery_button_ui.test.cjs
 `agent/openai_llm.py`·`agent/ollama_llm.py`(IoT 설명 전용 어댑터).
 
 API 형식 참고: [OpenAI 공식 Structured Outputs 문서](https://developers.openai.com/api/docs/guides/structured-outputs?api-mode=chat).
+
+## 공식 매뉴얼 적용 후 실제 모델 재평가
+
+평가기에서도 OpenAI·Ollama를 선택할 수 있다. --model 생략 시 해당 환경 변수의 설명 모델을 사용한다.
+.env에서 키와 모델 설정을 읽고 추적은 비활성화한다. 키는 출력·평가 결과에 저장하지 않는다.
+
+    .venv/bin/python scripts/evaluate_iot.py --backend openai --model gpt-4o --output doc/evaluation_openai_next.json
+
+OpenAI 사용료가 발생한다. 고정12개 질문 중 모델 호출 경로에서만 생성하며, 원래 그래프의 최대1회 재작성 정책이 적용된다.
+임시 DB·독립 MCP를 사용하고 기존 이력·시연 상태는 바꾸지 않는다.
+출력 파일은 과거 결과와 겹치지 않게 지정한다. 시도별 입력·생성 결과·사용량과 정제된 오류를 기록한다.
+인증·사용 한도 오류는 반복 호출하지 않고 남은 사례를 미실행으로 기록한다.
+
+[2026-10-22 실제 재평가와 남은 개선 사항](model_reevaluation_20261022.md).

@@ -11,7 +11,7 @@ import httpx
 from fastapi.testclient import TestClient
 
 from agent.iot_llm import ExplanationError, make_messages, request_explanation
-from agent.device_rules import allowed_guidance, CAUTION
+from agent.device_rules import allowed_guidance, CAUTION, required_observation_explanation
 from agent.openai_llm import OpenAIQualityLLM
 from agent.ollama_llm import OllamaQualityLLM
 
@@ -123,7 +123,7 @@ class LLMChatIntegrationTests(unittest.TestCase):
         self.stack.enter_context(patch.object(server, "SqliteSessionStore", lambda: original_store(Path(folder) / "sessions.db")))
         async def explain(**kwargs):
             candidates = kwargs.get("cause_candidates", [])[:2]
-            answer = {**ANSWER, "candidate_ids": [c["id"] for c in candidates],
+            answer = {**ANSWER, "explanation": required_observation_explanation(kwargs["assessment"]) or ANSWER["explanation"], "candidate_ids": [c["id"] for c in candidates],
                       "next_steps": allowed_guidance(kwargs["data"], kwargs["assessment"], candidates)[:2], "caution": CAUTION,
                       "source_ids": [d["source_id"] for d in kwargs.get("documents", [])]}
             return answer, USAGE

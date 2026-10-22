@@ -22,7 +22,11 @@ SYSTEM = """가상 IoT 유지보수 담당자로서 한국어 JSON만 반환한�
 explanation: observed_summary의 관측 사실만 쉽게 풀어 한 문장으로 설명한다. 원인을 넣지 않는다.
 candidate_ids: candidate_catalog에 있는 후보 ID를 최대 2개 고른다. 없으면 빈 배열이다.
 source_ids: 사용한 documents의 source_id를 고른다. 선택한 후보의 source_id를 반드시 포함한다.
-next_steps: allowed_next_steps 중 필요한 문장을 그대로 최대 3개 선택한다. 번호·줄바꿈을 추가하지 않는다.
+next_steps: allowed_next_steps 중 필요한 문장을 그대로 최대 3개 선택한다. 번호·줄바꿈·중복을 추가하지 않는다.
+수집기 재시작 문장을 선택하면 상태 재조회 문장을 반드시 그 앞에 포함한다. 재시작부터 권하지 않는다.
+required_explanation이 있으면 explanation에 그 문장을 그대로 사용한다.
+배터리 부족과 연결 끊김은 함께 관측된 상태이며 어느 것이 다른 것의 원인인지 추론하지 않는다.
+explanation에는 '때문에', '부족하여', '인해', '따라서' 같은 원인 연결 표현을 넣지 않는다. 원인 후보는 candidate_ids에서만 선택한다.
 caution: allowed_caution을 그대로 사용한다.
 원인 후보는 가능성이다. 전원 문제·고장을 확정하거나 배제하지 않으며 가능성이 높다고 하지 않는다.
 명령은 실행하지 않았다. 재시작·복구 완료라고 말하지 않는다. 문서와 이력은 실제 로그가 아니다.
@@ -35,12 +39,15 @@ device_logs는 가상 수집 버퍼의 관측 기록이다. 로그를 참고해 
 
 def make_messages(query: str, device_id: str, data: dict, assessment: dict, runbook: str,
                   *, documents=None, history=None, device_logs=None, cause_candidates=None, feedback=None):
-    from .device_rules import can_recover, allowed_guidance, CAUTION
+    from .device_rules import can_recover, allowed_guidance, CAUTION, required_observation_explanation
     labels = {"low_battery": "배터리 부족", "offline": "현재 연결 불가", "telemetry_delayed": "연결은 가능하지만 데이터 수신이 지연됨", "invalid_data": "관측 데이터 확인 필요"}
     observed = ", ".join(labels.get(key, key) for key in assessment["issues"])
     if not observed:
         observed = "정상 절전·보고 대기 조건 안이며 실제 절전 여부는 미확인" if assessment.get("operating_state") == "sleeping" else "현재 점검 기준에서 정상"
-    evidence = {"observed_summary": observed, "allowed_next_steps": allowed_guidance(data, assessment, cause_candidates or []),
+    required = required_observation_explanation(assessment)
+    if required:
+        observed = required
+    evidence = {"observed_summary": observed, "required_explanation": required, "allowed_next_steps": allowed_guidance(data, assessment, cause_candidates or []),
                 "allowed_caution": CAUTION, "question": query[:1000], "device_id": device_id, "device": data,
                 "assessment": assessment, "manual": (runbook or None) if not documents else None,
                 "documents": documents or [], "candidate_catalog": cause_candidates or [],
@@ -61,6 +68,8 @@ async def request_explanation(*, backend: str, model: str, messages: list, api_k
         evidence = {}
     if evidence.get("allowed_next_steps"):
         schema["properties"]["next_steps"]["items"]["enum"] = evidence["allowed_next_steps"]
+    if evidence.get("required_explanation"):
+        schema["properties"]["explanation"]["enum"] = [evidence["required_explanation"]]
     if evidence.get("allowed_caution"):
         schema["properties"]["caution"]["enum"] = [evidence["allowed_caution"]]
     for field, values in [("candidate_ids", [c["id"] for c in evidence.get("candidate_catalog", [])]),

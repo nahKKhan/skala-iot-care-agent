@@ -11,7 +11,7 @@ def device_ids(query):
 
 def is_device_discovery(query):
     compact = re.sub(r"\s+", "", query.lower())
-    if re.search(r"점검|진단|고장|이상|원인|왜|재시작|복구|배터리|잔량|주기|로그|이력|기록|연결상태", compact):
+    if re.search(r"점검|진단|고장|이상|원인|왜|재시작|복구|배터리|잔량|주기|로그|이력|기록|연결상태|확정|단정|배제|가능성|때문|전원문제", compact):
         return False
     return bool(re.search(r"뭐가|무엇|어떤|무슨|뭐더라|뭐였|뭐야|뭐지|찾|목록|관리하는|담당|설치된|센서.*있|장치.*있", compact))
 
@@ -51,16 +51,16 @@ def route_query(query, resolved_ids=None):
             return "list_devices", ids
         if re.search(r"점검해(?:줘|주세요|라|$)|진단해(?:줘|주세요|라|$)|재시작해(?:줘|주세요|라|$)|복구해(?:줘|주세요|라|$)|센서.{0,6}(?:이상|고장)|센서점검", compact):
             return "clarify", ids
-        if re.search(r"매뉴얼|메뉴얼|배터리|절전|수신|지연|오프라인|게이트웨이|전송|수집|복구|재시작|원인", compact):
+        if re.search(r"매뉴얼|메뉴얼|배터리|절전|수신|지연|오프라인|게이트웨이|전송|수집|복구|재시작|원인|전원", compact):
             return "manual", ids
         return "help", ids
-    if wants_logs and not re.search(r"분석|진단|원인|왜|점검해|재시작|복구", compact):
+    if wants_logs and not re.search(r"분석|진단|원인|왜|점검해|재시작|복구|확정|단정|배제|가능성|때문|전원문제", compact):
         return "logs", ids
     if wants_logs:
         return "diagnose", ids
     if re.search(r"이력|기록|지난점검|이전점검|과거|최근조치", compact):
         return "history", ids
-    if re.search(r"점검|진단|고장|이상|원인|왜|재시작|복구|안와|안오|멈|끊|부족|방전", compact):
+    if re.search(r"점검|진단|고장|이상|원인|왜|재시작|복구|안와|안오|멈|끊|부족|방전|확정|단정|배제|가능성|때문|전원문제|전원이상", compact):
         return "diagnose", ids
     if re.search(r"배터리|잔량|전송주기|수신주기|간격|지원명령|무슨명령|연결상태|지원기능", compact):
         return "status", ids
@@ -69,6 +69,13 @@ def route_query(query, resolved_ids=None):
     if resolved_ids and not explicit_ids and not re.search(r"상태|어때", compact):
         return "device_info", ids
     return "diagnose", ids
+
+
+def power_judgment_notice(query):
+    compact = re.sub(r"\s+", "", query.lower())
+    if "전원" in compact and re.search(r"배제|확정|단정|문제.{0,5}(?:없|아니)|이상.{0,5}(?:없|아니)", compact):
+        return "배터리 잔량만으로 전원 문제를 배제할 수 없습니다. 실제 전압과 전원 접점 상태는 추가 확인이 필요합니다."
+    return None
 
 
 HELP = """IoT 장치의 소개·상태·점검, 유지보수 이력과 매뉴얼 질문에 답할 수 있어요.

@@ -66,6 +66,17 @@ def can_recover(data, assessment=None):
 
 
 CAUTION = "현재 관측과 검색 문서만으로 고장 원인을 확정할 수 없습니다."
+RECHECK_STEP = "상태를 다시 조회해 지연이 계속되는지 확인하세요."
+COLLECTOR_RECOVERY_STEP = "가상 복구 버튼으로 수집기 재시작을 요청한 뒤 새 데이터 수신을 확인하세요."
+
+
+def required_observation_explanation(assessment):
+    """오해하면 원인·실제 절전 확정이 되는 관측 조합은 코드 문장으로 제한한다."""
+    if assessment.get("operating_state") == "sleeping" and not assessment.get("issues"):
+        return "정상 보고 대기 조건 안이며, 실제 절전 여부는 확인되지 않았습니다."
+    if {"low_battery", "offline"} <= set(assessment.get("issues", [])):
+        return "배터리 잔량 부족과 연결 불가가 함께 관측되었습니다. 두 상태의 인과관계는 확인되지 않았습니다."
+    return None
 
 
 def allowed_guidance(data, assessment, candidates):
@@ -79,8 +90,7 @@ def allowed_guidance(data, assessment, candidates):
     if data.get("recovery_attempts", 0):
         steps = ["이미 복구를 시도했으므로 추가 재시작 대신 현장 점검을 진행하세요."]
     elif can_recover(data, assessment):
-        steps = ["상태를 다시 조회해 지연이 계속되는지 확인하세요.",
-                 "가상 복구 버튼으로 수집기 재시작을 요청한 뒤 새 데이터 수신을 확인하세요."]
+        steps = [RECHECK_STEP, COLLECTOR_RECOVERY_STEP]
     else:
         steps = ["현장에서 배터리·전원 접점과 연결 상태를 확인하세요.",
                  "연결이 회복되면 새 데이터가 수신되는지 확인하세요."]

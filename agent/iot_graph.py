@@ -3,11 +3,11 @@ import re
 from typing import TypedDict
 from langgraph.graph import END, StateGraph
 from langgraph.config import get_stream_writer
-from .device_rules import assess_device
+from .device_rules import assess_device, can_recover, allowed_guidance
 from .manual_search import source_description, SOURCE_FIELDS
 from .iot_llm import ExplanationError, render_explanation
 from .answer_quality import check_answer
-from .query_router import route_query, device_ids, find_named_devices, is_device_discovery, HELP
+from .query_router import route_query, device_ids, find_named_devices, is_device_discovery, power_judgment_notice, HELP
 from .device_logs import format_device_logs
 
 
@@ -245,8 +245,14 @@ def build_graph(deps):
             lines.append("\n원인 후보 (검증 전 가능성):")
             for candidate in candidates:
                 lines.append(f"- {candidate['title']} [{candidate['source_id']}]\n  추가 확인: {candidate['check']}")
+        notice = power_judgment_notice(state["query"])
+        if notice:
+            lines.append("\n질문에 대한 판단 한계: " + notice)
         if not accepted:
-            if assessment.get("operating_state") == "sleeping" and not issues:
+            if can_recover(data, assessment):
+                lines.append("\n다음 조치:")
+                lines.extend(f"{i}. {step}" for i, step in enumerate(allowed_guidance(data, assessment, [])[:2], 1))
+            elif assessment.get("operating_state") == "sleeping" and not issues:
                 lines.append("\n다음 조치: 전원 방식별 보고 조건을 확인하고 다음 보고 기한 이후 새 수신 여부를 확인하세요.")
             elif data.get("recovery_attempts", 0):
                 lines.append("\n다음 조치: 이미 복구를 시도했습니다. 추가 재시작 대신 현장 점검이 필요합니다.")

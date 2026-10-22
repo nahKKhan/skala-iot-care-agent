@@ -1,4 +1,4 @@
-"""고정 IoT 사례의 규칙·검색 평가와 선택적인 실제 Ollama 평가. 정답은 모델에 전달하지 않는다."""
+"""고정 사례의 규칙·검색 및 실제 Ollama/OpenAI 평가. 생성 입력에 정답을 전달하지 않는다."""
 import argparse
 import hashlib
 import asyncio
@@ -19,10 +19,65 @@ from agent.deps import IoTDeps
 from agent.iot_graph import build_graph
 from agent.fake_llm import RuleBasedLLM
 from agent.ollama_llm import OllamaQualityLLM
+from agent.openai_llm import OpenAIQualityLLM
+from agent.iot_llm import ExplanationError
 from agent.mcp_client import MCPClient
 from agent.session_store import SqliteSessionStore
 from agent.iot_simulator import IoTSimulator
 from agent.manual_search import ManualIndex
+
+
+class RecordingModel:
+    """실제 생성 시도별 입력·결과·정제된 오류를 기록한다. 키·HTTP 헤더는 접근하지 않는다."""
+    def __init__(self, model):
+        self.model = model
+        self.name = model.name
+        self.calls = []
+
+    async def explain_device(self, **kwargs):
+        import copy
+        call = {"input": copy.deepcopy(kwargs), "started_at": datetime.now().astimezone().isoformat(timespec="seconds")}
+        start = time.monotonic()
+        self.calls.append(call)
+        try:
+            answer, usage = await self.model.explain_device(**kwargs)
+            call.update({"output": copy.deepcopy(answer), "usage": copy.deepcopy(usage), "error": None})
+            return answer, usage
+        except ExplanationError as exc:
+            call.update({"output": None, "usage": None, "error": str(exc)})
+            raise
+        finally:
+            call["elapsed_seconds"] = round(time.monotonic()-start, 3)
+
+
+def configured_model(backend, requested=None):
+    if requested:
+        return requested
+    if backend == "openai":
+        return os.environ.get("OPENAI_QUALITY_MODEL", "gpt-4o")
+    if backend == "ollama":
+        return os.environ.get("OLLAMA_QUALITY_MODEL", "qwen3.5:2b")
+    return "none"
+
+
+def build_evaluation_model(backend, model):
+    if backend == "openai":
+        return RecordingModel(OpenAIQualityLLM(model))
+    if backend == "ollama":
+        return RecordingModel(OllamaQualityLLM(model))
+    if backend == "rules":
+        return RuleBasedLLM("rules-evaluation")
+    raise ValueError("지원하지 않는 평가 백엔드입니다.")
+
+
+def build_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--backend", choices=["rules", "ollama", "openai"], default="rules")
+    parser.add_argument("--model", default=None)
+    parser.add_argument("--limit", type=int, default=12)
+    parser.add_argument("--output", type=Path, default=ROOT/"doc/evaluation_rules.json")
+    parser.add_argument("--render-only", type=Path)
+    return parser
 
 
 def legacy_issues(data):
@@ -59,6 +114,15 @@ def write_report(report, output):
               "| 사례 | 입력 | 결과 출처 | 시간(초) | 검색 문서 | 검수 |", "|---|---|---|---:|---|---|"]
     for c in cases:
         lines.append(f"| {c['id']} | {c['query']} | {c['answer_source']} | {c['elapsed_seconds']} | {', '.join(c['retrieved_documents']) or '-'} | {c['qa'].get('passed') if c['qa'] else '-'} |")
+    lines += ["", "## 실행·생성 기록", "",
+              f"- 실행 상태: {report.get('run_status', 'completed')}",
+              f"- 요청 사례: {report.get('requested_case_count', len(cases))}, 완료 사례: {len(cases)}",
+              f"- 실제 생성 시도: {sum(len(c.get('model_calls', [])) for c in cases)}회",
+              "- model_calls에는 시도별 입력 근거·구조화된 출력·사용량·정제된 오류를 기록한다. 재작성 전 출력도 보존한다.",
+              "- 같은 임시 DB에서 고정 순서로 실행하므로 앞선 사례의 점검 이력이 후속 입력에 포함될 수 있다.",
+              "- manual_review는 사람의 검토 칸이며 null이면 미검토다. assistant_review가 있으면 개발 에이전트의 별도 내용 검토로서 사람의 승인과 구분한다."]
+    if report.get("not_run_case_ids"):
+        lines.append("- 미실행 사례: " + ", ".join(report["not_run_case_ids"]))
     lines += ["", "## 검토 메모", "", ("- 제조사 공식 문서 기반 한국어 요약을 사용했다. 실제 기기·현장 로그는 연결하지 않았다."
                if report.get("manual_corpus") else "- 실제 기기·제조사 매뉴얼·현장 로그는 연결하지 않았다."),
               "- 소규모 개발용 평가 세트다. 독립된 대규모 검증 세트나 사람의 승인 결과가 아니다.",
@@ -70,17 +134,29 @@ def write_report(report, output):
 
 
 async def evaluate(args):
+    from dotenv import load_dotenv
+    load_dotenv(ROOT/".env", override=False)
+    args.model = configured_model(args.backend, args.model)
     cases=json.loads((ROOT/"data/evaluation_cases.json").read_text())[:args.limit]
     seed=IoTSimulator()
     results=[]
+    corpus = ManualIndex().search("보고 주기")
+    report = {"manual_corpus": {key:corpus[key] for key in ("index_version", "manufacturer_document_count", "policy_document_count", "chunk_count")},
+              "device_data_version":hashlib.sha256((ROOT/"data/devices.json").read_bytes()).hexdigest()[:12],
+              "evaluation_cases_version":hashlib.sha256((ROOT/"data/evaluation_cases.json").read_bytes()).hexdigest()[:12],
+              "evaluation_script_version":hashlib.sha256(Path(__file__).read_bytes()).hexdigest()[:12],
+              "pipeline_version":PIPELINE_VERSION, "created_at":datetime.now().astimezone().isoformat(timespec="seconds"),
+              "backend":args.backend, "model":args.model, "requested_case_count":len(cases),
+              "run_status":"running", "cases":results}
     with tempfile.TemporaryDirectory() as folder:
         store=SqliteSessionStore(Path(folder)/"evaluation.db")
         mcp=MCPClient(extra_env={"IOT_DB_PATH":str(store.db_path)})
         await mcp.start()
         try:
-            model=OllamaQualityLLM(args.model) if args.backend=="ollama" else RuleBasedLLM("rules-evaluation")
+            model=build_evaluation_model(args.backend, args.model)
             graph=build_graph(IoTDeps(quality_llm=model,mcp=mcp,session_store=store))
             for case in cases:
+                call_start = len(getattr(model, "calls", []))
                 start=time.monotonic()
                 result=await graph.ainvoke({"query":case["query"]})
                 elapsed=round(time.monotonic()-start,2)
@@ -100,30 +176,31 @@ async def evaluate(args):
                     "baseline_classification_correct":previous==expected if expected is not None else None,
                     "baseline_document_hits":len(required.intersection(fixed)),"document_hits":len(required.intersection(retrieved)),
                     "retrieved_documents":retrieved,"sources":result.get("retrieval",{}),"no_command_executed":no_command,
+                    "route":result.get("route"), "assessment":result.get("assessment"),
+                    "observation":result.get("result",{}).get("data"),
+                    "model_calls":getattr(model,"calls",[])[call_start:],
                     "answer_source":result.get("answer_source","rules"),"qa":result.get("qa"),"attempts":result.get("attempts",0),
                     "llm_usage":result.get("llm_usage"),"elapsed_seconds":elapsed,"draft":result.get("draft"),"reply":result["final"],
                     "manual_review":{"factuality":None,"uncertain_causes":None,"appropriate_actions":None}})
                 print(f"{case['id']} {results[-1]['answer_source']} {elapsed}s",flush=True)
+                write_report(report,args.output)  # 중간 결과 보존. 재개·추가 호출은 자동으로 하지 않는다.
+                errors = [c.get("error") or "" for c in results[-1]["model_calls"]]
+                if any("인증 또는 사용 권한" in e or "사용 한도" in e for e in errors):
+                    report["run_status"] = "stopped_on_access_error"
+                    break
         finally:
             await mcp.stop()
             store.close()
-    index = ManualIndex()
-    corpus = index.search("보고 주기")
-    report={"manual_corpus": {key:corpus[key] for key in ("index_version", "manufacturer_document_count", "policy_document_count", "chunk_count")},
-            "device_data_version":hashlib.sha256((ROOT/"data/devices.json").read_bytes()).hexdigest()[:12],
-            "pipeline_version":PIPELINE_VERSION,"created_at":datetime.now().astimezone().isoformat(timespec="seconds"),"backend":args.backend,"model":args.model if args.backend=="ollama" else "none","cases":results}
+    if report["run_status"] == "running":
+        report["run_status"] = "completed"
+    report["not_run_case_ids"] = [c["id"] for c in cases[len(results):]]
+    report["finished_at"] = datetime.now().astimezone().isoformat(timespec="seconds")
     write_report(report,args.output)
     print("report:",args.output,flush=True)
 
 
 if __name__=="__main__":
-    parser=argparse.ArgumentParser()
-    parser.add_argument("--backend",choices=["rules","ollama"],default="rules")
-    parser.add_argument("--model",default="qwen3.5:2b")
-    parser.add_argument("--limit",type=int,default=12)
-    parser.add_argument("--output",type=Path,default=ROOT/"doc/evaluation_rules.json")
-    parser.add_argument("--render-only",type=Path)
-    args=parser.parse_args()
+    args=build_parser().parse_args()
     if args.render_only:
         write_report(json.loads(args.render_only.read_text()),args.render_only)
     else:
