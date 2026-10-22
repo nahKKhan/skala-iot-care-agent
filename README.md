@@ -1,5 +1,5 @@
 # IoT Care Agent
-
+> G113 김나흔
 > 발표자료 : https://drive.google.com/drive/folders/16k4CsGQzaidYtfd_vK3DFHBeBJ8vvfut?usp=drive_link
 
 **IoT 장치 장애 진단 및 원격 복구 지원 AI 에이전트**
