@@ -1,5 +1,7 @@
 # IoT Care Agent
 
+> 발표자료 : https://drive.google.com/drive/folders/16k4CsGQzaidYtfd_vK3DFHBeBJ8vvfut?usp=drive_link
+
 **IoT 장치 장애 진단 및 원격 복구 지원 AI 에이전트**
 
 장치 상태·로그·공식 문서 기반 매뉴얼·점검 이력을 조회해 원인 후보와 점검 순서를 안내하고, 사용자가 실행한 가상 복구의 결과를 확인·기록하는 서비스입니다.
